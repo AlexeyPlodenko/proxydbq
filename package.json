@@ -1,0 +1,79 @@
+{
+  "name": "proxydbq",
+  "productName": "Proxy DBQ",
+  "version": "0.0.1",
+  "description": "This tool provides a real-time list of all SQL queries, monitoring and automatically analyzing them to determine whether they use a database index. This helps you identify and fix performance bottlenecks by highlighting queries that could benefit from indexing.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development vite",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview",
+    "package": "vite build && electron-builder --dir --config.npmRebuild=false",
+    "package:ia32": "vite build && electron-builder --dir --ia32 --config.npmRebuild=false",
+    "build:win": "vite build && electron-builder --win",
+    "build:mac": "vite build && electron-builder --mac",
+    "build:linux": "vite build && electron-builder --linux",
+    "build:all": "vite build && electron-builder -mwl"
+  },
+  "resolutions": {
+    "vue-template-compiler": "npm:@vue/compiler-sfc@^3.5.16"
+  },
+  "build": {
+    "appId": "com.proxydbq.app",
+    "productName": "Proxy DBQ",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*",
+      "src/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable",
+        "zip"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm",
+        "tar.gz"
+      ],
+      "icon": "build/icon.png",
+      "category": "Development"
+    }
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.6",
+    "bootstrap-icons": "^1.13.1",
+    "electron-squirrel-startup": "^1.0.1",
+    "esbuild": "^0.25.5",
+    "highlight.js": "^11.11.1",
+    "mysql2": "^3.14.3",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.16"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.4.0",
+    "@vue/compiler-sfc": "^3.5.16",
+    "cross-env": "^7.0.3",
+    "electron": "^36.3.2",
+    "electron-builder": "^26.0.12",
+    "sass": "^1.89.1",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  }
+}
