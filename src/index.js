@@ -1,7 +1,7 @@
 import {app, BrowserWindow, net, ipcMain} from 'electron';
 import electronSquirrelStartup from 'electron-squirrel-startup';
 import { shell } from 'electron';
-import {fileURLToPath} from 'url';
+import {fileURLToPath, pathToFileURL} from 'url';
 import {dirname, join} from 'path';
 import {
     createMySQLProxyServer,
@@ -40,13 +40,19 @@ const isViteServerReady = () => {
 
 const createWindow = async () => {
     // Create the browser window.
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+    const preloadPath = isDev
+        ? join(__dirname, 'preload.js')
+        : join(app.getAppPath(), 'dist-electron', 'preload.js');
+
     mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: join(__dirname, 'preload.js'),
+            preload: preloadPath,
         }
     });
     mainWindow.setBackgroundColor('#212529');
@@ -94,7 +100,9 @@ const createWindow = async () => {
         }
 
     } else {
-        await mainWindow.loadURL(`file://${join(dirname(__dirname), '/src/index.html')}`);
+        const indexHtml = join(app.getAppPath(), 'dist', 'electron', 'index.html');
+        const indexUrl = pathToFileURL(indexHtml).toString();
+        await mainWindow.loadURL(indexUrl);
     }
 
     // Emitted when the window is closed.

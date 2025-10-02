@@ -44,6 +44,18 @@ To set up the development environment:
     npm run dev
     ```
 
+## Packaging for distribution
+
+### Windows
+
+`npm run make`
+
+`npx electron-forge make`
+
+`npm run publish`
+
+The binary and the setup should appear in the `/dist/` folder.
+
 ## Known Problems
 
 **`npm run package` gives the error - Cannot create symbolic link**
