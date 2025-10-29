@@ -48,7 +48,9 @@ To set up the development environment:
 
 ### Windows
 
-`npm run make`
+`npm i`
+
+`npm run package`
 
 `npx electron-forge make`
 
@@ -62,8 +64,20 @@ The binary and the setup should appear in the `/dist/` folder.
 
 Run the command in the CLI with administrator permissions.
 
+**`npm run package` errors: Cannot start service: Host version "0.21.5" does not match binary version "0.25.10"**
+
+This is caused by a version mismatch in esbuild between the JavaScript host package and the native binary. Fix:
+
+1) Remove install artifacts: delete `node_modules` and `package-lock.json`.
+2) Ensure you are using Node 18+ and npm 9+.
+3) Reinstall dependencies to pick up the pinned esbuild version: `npm install`.
+4) Try packaging again: `npm run package`.
+
+Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see the error, run `npm cache verify` and repeat the steps above.
+
 ## TODO
 
+* Test if Vitess, TiDB, MariaDB protocols are also supported. Update docs. Reflect supported protocols in UI.
 * Remember query. A clickable star icon, that puts the query to the saved queries list. 
 * View query. Click on a query to see the query details.
 * Saved queries should not be removed.
@@ -86,3 +100,6 @@ Run the command in the CLI with administrator permissions.
 * Slow logs. Configurable.
 * Duplicates counter.
 * Returned rows amount.
+* Recommend SQL best practices - * -> list columns, index used columns, coverage indexes,..
+* Recommend schema/query/index performance/normalization/denormalization improvements by analyzing query history.
+* Notify about N+1 queries.

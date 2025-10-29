@@ -25,6 +25,7 @@
     "directories": {
       "output": "dist"
     },
+    "artifactName": "${productName}-${os}-${arch}.${ext}",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
@@ -61,7 +62,6 @@
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
     "electron-squirrel-startup": "^1.0.1",
-    "esbuild": "^0.25.5",
     "highlight.js": "^11.11.1",
     "mysql2": "^3.14.3",
     "pinia": "^3.0.3",
@@ -74,6 +74,7 @@
     "electron": "^36.3.2",
     "electron-builder": "^26.0.12",
     "electron-prebuilt-compile": "8.2.0",
+    "esbuild": "0.21.5",
     "sass": "^1.89.1",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
@@ -85,5 +86,8 @@
   },
   "config": {
     "forge": "./forge.config.mjs"
+  },
+  "overrides": {
+    "esbuild": "0.21.5"
   }
 }
