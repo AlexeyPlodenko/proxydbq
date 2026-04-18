@@ -28,10 +28,18 @@ let mainWindow;
 const isViteServerReady = () => {
     return new Promise((resolve) => {
         const request = net.request('http://localhost:5173/');
+        // Set a short timeout for the check
+        const timeout = setTimeout(() => {
+            request.abort();
+            resolve(false);
+        }, 500);
+
         request.on('response', () => {
+            clearTimeout(timeout);
             resolve(true);
         });
         request.on('error', () => {
+            clearTimeout(timeout);
             resolve(false);
         });
         request.end();
@@ -41,8 +49,9 @@ const isViteServerReady = () => {
 const createWindow = async () => {
     // Create the browser window.
     const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    const isTest = process.env.NODE_ENV === 'test';
 
-    const preloadPath = isDev
+    const preloadPath = isDev || isTest
         ? join(__dirname, 'preload.js')
         : join(app.getAppPath(), 'dist-electron', 'preload.js');
 
@@ -66,9 +75,8 @@ const createWindow = async () => {
         return { action: 'allow' }; // Allow other types of new windows (if applicable)
     });
 
-    // and load the index.html of the app.
     // In development mode, load from Vite dev server with retry mechanism
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && !isTest) {
         // Try to connect to Vite dev server with retries
         let isReady = false;
         let retries = 0;
@@ -91,14 +99,17 @@ const createWindow = async () => {
         } else {
             console.error('Failed to connect to Vite server after multiple attempts');
             // Fallback to loading the file directly
-            await mainWindow.loadURL(`file://${join(dirname(__dirname), '/src/index.html')}`);
+            const indexHtml = join(dirname(__dirname), 'index.html');
+            await mainWindow.loadURL(pathToFileURL(indexHtml).toString());
         }
 
-        if (process.env.NODE_ENV === 'development') {
-            // Open the DevTools
-            mainWindow.webContents.openDevTools();
-        }
+        // Open the DevTools
+        mainWindow.webContents.openDevTools();
 
+    } else if (isTest) {
+        // In test mode, we usually want to load the file directly or a specific test URL
+        const indexHtml = join(dirname(__dirname), 'index.html');
+        await mainWindow.loadURL(pathToFileURL(indexHtml).toString());
     } else {
         const indexHtml = join(app.getAppPath(), 'dist', 'electron', 'index.html');
         const indexUrl = pathToFileURL(indexHtml).toString();
@@ -107,18 +118,13 @@ const createWindow = async () => {
 
     // Emitted when the window is closed.
     mainWindow.on('closed', () => {
-        // Dereference the window object, usually you would store windows
-        // in an array if your app supports multi windows, this is the time
-        // when you should delete the corresponding element.
         mainWindow = null;
     });
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-    // Set up the log callback to send messages to the renderer process
     setLogCallback((messages) => {
         if (mainWindow && mainWindow.webContents) {
             mainWindow.webContents.send('logProxyMessages', messages);
@@ -133,7 +139,6 @@ app.on('ready', () => {
 
     ipcMain.on('startProxyServers', (event, dbHost, dbPort, proxyHost, proxyPort) => {
         createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort);
-        // createPostgreSQLProxyServer('127.0.0.1', 5432, 5433);
     });
 
     ipcMain.on('stopProxyServers', () => {
@@ -143,38 +148,24 @@ app.on('ready', () => {
     ipcMain.on('fetchFromDb', async (event, sqlQuery, host, port, login, password, database) => {
         try {
             const result = await sendSqlQuery$(sqlQuery, host, port, login, password, database);
-            // Reply directly to the sender renderer process with the result
             event.reply('fetchFromDbResult', { ok: true, result });
         } catch (err) {
-            // Send an error response back to the renderer
             event.reply('fetchFromDbResult', { ok: false, error: err && err.message ? err.message : String(err) });
         }
     });
 
-    // Handle the async createWindow function
     createWindow().catch(err => {
         console.error('Error creating window:', err);
     });
-
-    // app.on('activate', () => {
-    //   if (BrowserWindow.getAllWindows().length === 0) {
-    //     createWindow();
-    //   }
-    // });
 });
 
-// Quit when all windows are closed.
 app.on('window-all-closed', () => {
-    // On OS X it is common for applications and their menu bar
-    // to stay active until the user quits explicitly with Cmd + Q
     if (process.platform !== 'darwin') {
         app.quit();
     }
 });
 
 app.on('activate', () => {
-    // On OS X it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (mainWindow === null) {
         createWindow().catch(err => {
             console.error('Error creating window on activate:', err);
