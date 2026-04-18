@@ -23,21 +23,34 @@
 
     function toggleServerStatus() {
         if (isProxyRunning.value) {
-            window.electronAPI.stopProxyServers();
+            stopProxyServer();
         } else {
+            startProxyServer();
+        }
+    }
+
+    function startProxyServer() {
+        if (!isProxyRunning.value) {
             window.electronAPI.startProxyServers(
                 mysqlServerIp.value,
                 mysqlServerPort.value,
                 mysqlProxyLocalhost.value ? '127.0.0.1' : '0.0.0.0',
                 mysqlProxyPort.value
             );
+
+            isProxyRunning.value = true;
         }
-        isProxyRunning.value = !isProxyRunning.value;
+    }
+
+    function stopProxyServer() {
+        window.electronAPI.stopProxyServers();
+
+        isProxyRunning.value = false;
     }
 
     onMounted(function() {
         if (window.env.isDevelopment()) {
-            toggleServerStatus();
+            startProxyServer();
         }
     });
 </script>

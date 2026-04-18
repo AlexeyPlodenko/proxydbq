@@ -12,7 +12,6 @@ export const useLogStore = defineStore('logStore', () => {
     return {
         clearSignal,
         triggerClear,
-
         checkQueryIndexesUsage,
     };
 });

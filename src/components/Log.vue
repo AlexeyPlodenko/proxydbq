@@ -1,16 +1,15 @@
 <script setup>
-import {onMounted, ref, watch} from "vue";
-import hljs from 'highlight.js/lib/core';
+    import {onMounted, ref, watch} from "vue";
+    import hljs from 'highlight.js/lib/core';
+    // import 'highlight.js/styles/github.css';
+    import sql from 'highlight.js/lib/languages/sql';
+    import {FoundNodes} from "../lib/FoundNodes.js";
+    import {useConnectionsStore, useLogStore} from "../stores.js";
+    import {isSelectQuery} from "../helpers.js";
+    import {getRendererDb} from "../renderer/providers/getRendererDb.js";
+    import {d} from "../lib/helpers.js";
 
-// import 'highlight.js/styles/github.css';
-import sql from 'highlight.js/lib/languages/sql';
-import {FoundNodes} from "../lib/FoundNodes.js";
-import {useConnectionsStore, useLogStore} from "../stores.js";
-import {isSelectQuery} from "../helpers.js";
-import {getRendererDb} from "../renderer/providers/getRendererDb.js";
-import {d} from "../lib/helpers.js";
-
-hljs.registerLanguage('sql', sql);
+    hljs.registerLanguage('sql', sql);
 
     const connectionsStore = useConnectionsStore();
     const logStore = useLogStore();
