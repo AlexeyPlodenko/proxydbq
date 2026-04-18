@@ -25,9 +25,9 @@ if (electronSquirrelStartup) {
 let mainWindow;
 
 // Function to check if the Vite dev server is ready
-const isViteServerReady = () => {
+const isViteServerReady = (url) => {
     return new Promise((resolve) => {
-        const request = net.request('http://localhost:5173/');
+        const request = net.request(url);
         // Set a short timeout for the check
         const timeout = setTimeout(() => {
             request.abort();
@@ -77,14 +77,17 @@ const createWindow = async () => {
 
     // In development mode, load from Vite dev server with retry mechanism
     if (process.env.NODE_ENV === 'development' && !isTest) {
+        // Preference: Forge env var, then Plugin env var, then fallback
+        const devServerUrl = process.env.MAIN_WINDOW_VITE_DEV_SERVER_URL || process.env.VITE_DEV_SERVER_URL || 'http://localhost:5199/';
+        
         // Try to connect to Vite dev server with retries
         let isReady = false;
         let retries = 0;
         const maxRetries = 10;
 
         while (!isReady && retries < maxRetries) {
-            console.log(`Checking if Vite server is ready (attempt ${retries + 1}/${maxRetries})...`);
-            isReady = await isViteServerReady();
+            console.log(`Checking if Vite server is ready at ${devServerUrl} (attempt ${retries + 1}/${maxRetries})...`);
+            isReady = await isViteServerReady(devServerUrl);
 
             if (!isReady) {
                 retries++;
@@ -94,8 +97,8 @@ const createWindow = async () => {
         }
 
         if (isReady) {
-            console.log('Vite server is ready, loading URL...');
-            await mainWindow.loadURL('http://localhost:5173/');
+            console.log(`Vite server at ${devServerUrl} is ready, loading URL...`);
+            await mainWindow.loadURL(devServerUrl);
         } else {
             console.error('Failed to connect to Vite server after multiple attempts');
             // Fallback to loading the file directly

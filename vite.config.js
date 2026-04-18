@@ -1,63 +1,51 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import electron from 'vite-plugin-electron';
-import electronRenderer from 'vite-plugin-electron-renderer';
-import path from 'path'; // Import the path module
+import renderer from 'vite-plugin-electron-renderer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
     plugins: [
         vue(),
         electron([
             {
-                // Main process entry file
+                // Main-process entry file of the Electron App.
                 entry: 'src/index.js',
-                // Optional: Add custom vite config for the main process
-                // See https://vite-plugin-electron.netlify.app/config/#options
+                onstart(options) {
+                    options.startup();
+                },
                 vite: {
                     build: {
-                        //rollupOptions: {
-                        //  external: ['electron', ...], // Add other externals if needed
-                        //},
+                        outDir: 'dist-electron/main',
                     },
                 },
             },
             {
                 entry: 'src/preload.js',
                 onstart(options) {
-                    // Notify the Renderer-Process to reload the page when the Preload-Scripts build is complete,
-                    // instead of restarting the entire Electron App.
                     options.reload();
                 },
-                // Optional: Add custom vite config for the preload script
                 vite: {
                     build: {
-                        //rollupOptions: {
-                        //  external: ['electron', ...],
-                        //},
+                        outDir: 'dist-electron/preload',
                     },
                 },
             },
         ]),
-        electronRenderer({
-            // Disable nodeIntegration for security
-            nodeIntegration: false,
-            // Enable contextIsolation for security
-            contextIsolation: true,
-            // secure: true, // Default: true.
-        }),
+        renderer(),
     ],
-    // Configure the build output directory
-    build: {
-      outDir: 'dist/electron'
-    },
     resolve: {
         alias: {
+            '@': path.resolve(__dirname, 'src'),
             '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
         }
     },
-    // Configure the development server
     server: {
-      port: 5173,
-      strictPort: true,
+        port: 5199, // Use a unique port to avoid conflicts
+        strictPort: true,
     }
 });
