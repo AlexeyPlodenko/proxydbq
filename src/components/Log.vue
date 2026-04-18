@@ -536,7 +536,7 @@
     <div class="main-content">
         <div class="p-2 border-bottom" style="padding: 12px 40px 12px 40px !important;">
             <form class="d-flex">
-                <input class="form-control me-2" type="search" placeholder="Type your search criteria" aria-label="Search" v-model="searchInput" @search="search">
+                <input class="form-control me-2" type="search" placeholder="Find a query..." aria-label="Search" v-model="searchInput" @search="search">
                 <button class="btn btn-outline-success text-nowrap" @click.prevent="search">{{totalFound === -1 ? 'Search' : `Search (${currentFound > 0 ? currentFound : 0}/${totalFound})`}}</button>
             </form>
         </div>
