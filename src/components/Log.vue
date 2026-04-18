@@ -48,6 +48,41 @@
      */
     const logItems$ = new WeakMap();
 
+    function logSystemMessage(text, timestamp) {
+        if (!$log.value) return;
+
+        const now = timestamp ? new Date(timestamp) : new Date();
+        const date = dateFormat.format(now);
+        const time = timeFormat.format(now);
+
+        const logId = getNextLogId();
+        const scrolledToBottom = isScrolledToBottom($log.value);
+
+        const dateHtml = `${date} ${time}`;
+        const queryHtml = `<span class="text-info">${text}</span>`;
+
+        const $tpl = [
+            `<div class="log-date" data-${scopedCssData}>${dateHtml}</div>`,
+            `<div class="log-meta-short" data-${scopedCssData}></div>`,
+            `<div class="log-query" data-${scopedCssData}>${queryHtml}</div>`,
+        ].join('');
+
+        const $div = document.createElement('div');
+        $div.id = `logId_${logId}`;
+        $div.classList.add('log-container');
+        $div.innerHTML = $tpl;
+        $div.dataset[scopedCssData] = '';
+        $div.dataset.timestamp = now.getTime().toString();
+        $div.dataset.searchMessage = text.toLowerCase();
+        $div.style.paddingTop = '6px';
+
+        $log.value.appendChild($div);
+
+        if (scrolledToBottom) {
+            $log.value.scrollTop = $log.value.scrollHeight;
+        }
+    }
+
     window.electronAPI.onProxyMessage(async (message) => {
         // must be an object with a commandByte and query keys in
         if (!(typeof message === 'object' && 'commandByte' in message && 'query' in message)) {
@@ -438,6 +473,15 @@
         (newValue, oldValue) => {
             if (newValue && newValue !== oldValue) {
                 // @TODO analyze existing queries
+            }
+        }
+    );
+
+    watch(
+        () => logStore.systemMessage,
+        (newValue) => {
+            if (newValue) {
+                logSystemMessage(newValue.text, newValue.timestamp);
             }
         }
     );

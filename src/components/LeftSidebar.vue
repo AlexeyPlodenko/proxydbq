@@ -3,10 +3,11 @@
     import {onMounted, ref} from "vue";
     import {d} from "../lib/helpers.js";
     import Sidebar from "./Sidebar.vue";
-    import {useConnectionsStore} from "../stores.js";
+    import {useConnectionsStore, useLogStore} from "../stores.js";
     import {storeToRefs} from "pinia";
 
     const connectionsStore = useConnectionsStore();
+    const logStore = useLogStore();
     const {
         mysqlServerIp,
         mysqlServerPort,
@@ -39,6 +40,7 @@
             );
 
             isProxyRunning.value = true;
+            logStore.logSystemMessage('Proxy server started');
         }
     }
 
@@ -46,6 +48,7 @@
         window.electronAPI.stopProxyServers();
 
         isProxyRunning.value = false;
+        logStore.logSystemMessage('Proxy server stopped');
     }
 
     onMounted(function() {
