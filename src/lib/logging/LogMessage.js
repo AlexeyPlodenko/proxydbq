@@ -4,5 +4,6 @@ export const LOG_MESSAGE_TYPE = {
 };
 
 export class LogMessage {
-
+    id = Math.random().toString(36).substring(2, 9);
+    timestamp = Date.now();
 }

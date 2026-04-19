@@ -5,6 +5,7 @@ export const useLogStore = defineStore('logStore', () => {
     const clearSignal = ref(0);
     const checkQueryIndexesUsage = ref(false);
     const systemMessage = ref(null);
+    const slowQueryThresholdMs = ref(100);
 
     function triggerClear() {
         clearSignal.value++
@@ -23,6 +24,7 @@ export const useLogStore = defineStore('logStore', () => {
         checkQueryIndexesUsage,
         systemMessage,
         logSystemMessage,
+        slowQueryThresholdMs,
     };
 });
 

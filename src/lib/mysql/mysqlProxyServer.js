@@ -35,7 +35,7 @@ const COM_LONG_DATA = 0x18; // 24
  * log information. It is initialized as `null` by default, implying
  * that no logging behavior is assigned.
  *
- * To utilize this, assign a function to `logCallback` that takes
+ * To use this, assign a function to `logCallback` that takes
  * relevant logging arguments as needed.
  *
  * @type {Function|null}
@@ -148,6 +148,9 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
         let clientBuffer = Buffer.alloc(0);
         let serverConnected = false;
 
+        /** @type {Map<string, QueryLogMessage>} */
+        const pendingQueries = new Map();
+
         // Create externalized client data processor with injected dependencies
         const hostPortKey = `${dbHost}:${dbPort}`;
         const processMySQLClientData = createProcessMySQLClientData({
@@ -159,7 +162,15 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
             clientSocket,
             clientId,
             logNonQueries,
-            log,
+            log: (msg) => {
+                if (msg instanceof QueryLogMessage) {
+                    if (msg.sendTime === null) {
+                        msg.sendTime = Date.now();
+                        pendingQueries.set(msg.id, msg);
+                    }
+                }
+                log(msg);
+            },
             error,
             QueryLogMessage,
             preparedStatements,
@@ -220,6 +231,13 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
         let lastStatementId = null;
 
         serverSocket.on('data', data => {
+            const now = Date.now();
+            for (const [id, query] of pendingQueries.entries()) {
+                if (query.processTime === null) {
+                    query.processTime = now - query.sendTime;
+                }
+            }
+
             // Forward the data to the client
             if (clientSocket.writable) {
                 clientSocket.write(data);
@@ -241,6 +259,16 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
                 preparedStatements,
                 COM_STMT_PREPARE,
             }));
+
+            // If we have an OK or EOF packet, or some results, we might consider the query finished.
+            for (const [id, query] of pendingQueries.entries()) {
+                // Heuristic: small packet likely ends the response, or it's an OK packet
+                if (data.length < 16384 || data[4] === 0x00 || data[4] === 0xFE) {
+                    query.responseTime = Date.now() - query.sendTime;
+                    pendingQueries.delete(id);
+                    log(query);
+                }
+            }
         });
 
         clientSocket.on('close', () => {

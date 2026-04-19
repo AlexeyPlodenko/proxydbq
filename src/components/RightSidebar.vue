@@ -20,6 +20,14 @@
                 <label class="form-check-label" for="check-query-index-usages">Check query index usage</label>
                 <i class="bi bi-info-circle small ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Analyze used indexes for SELECT queries. Only for new queries."></i>
             </div>
+
+            <div class="mt-3">
+                <label for="slow-query-threshold" class="form-label">Slow query threshold (ms)</label>
+                <input type="number" min="0" step="1" class="form-control" id="slow-query-threshold" v-model.number="logStore.slowQueryThresholdMs">
+                <div v-if="logStore.slowQueryThresholdMs < 0 || !Number.isInteger(logStore.slowQueryThresholdMs)" class="text-danger small mt-1">
+                    Slow query threshold (ms) must be a 0 or greater.
+                </div>
+            </div>
         </template>
     </Sidebar>
 </template>

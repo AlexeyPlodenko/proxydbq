@@ -35,6 +35,7 @@
     let focusedSearchIndex = -1;
     const totalFound = ref(-1);
     const currentFound = ref(-1);
+    const isSlowQuery = ref(false);
 
     const $detailsQuery = ref(null);
     const currentLogContainer = ref(null);
@@ -43,6 +44,7 @@
     const $explainQuery = ref(null);
     const $explainQueryRes = ref(null);
     const $explainQueryErr = ref(null);
+    const $queryDetailsTimes = ref(null);
 
     const zoomLevel = ref(1);
 
@@ -94,6 +96,19 @@
             return;
         }
 
+        const $existingDiv = message.id ? document.getElementById(`logQueryId_${message.id}`) : null;
+
+        if ($existingDiv) {
+            const logItem = logItems$.get($existingDiv);
+            if (logItem) {
+                logItem.sendTime = message.sendTime;
+                logItem.processTime = message.processTime;
+                logItem.responseTime = message.responseTime;
+                renderQueryTime($existingDiv);
+                return;
+            }
+        }
+
         const now = new Date();
         const date = dateFormat.format(now);
         const time = timeFormat.format(now);
@@ -141,7 +156,7 @@
             ].join('');
 
             const $div = document.createElement('div');
-            $div.id = `logId_${logId}`;
+            $div.id = message.id ? `logQueryId_${message.id}` : `logId_${logId}`;
             $div.classList.add('log-container');
             $div.innerHTML = $tpl;
             $div.dataset[scopedCssData] = '';
@@ -151,7 +166,10 @@
 
             const logItem = {
                 rawQuery: message.query,
-                isBeautified: false
+                isBeautified: false,
+                sendTime: message.sendTime,
+                processTime: message.processTime,
+                responseTime: message.responseTime,
             };
             logItems$.set($div, logItem);
 
@@ -197,6 +215,12 @@
                 renderIndexUsed($div);
             }
 
+            const timeHtml = [
+                `<span class="log-meta-short-time" data-${scopedCssData}></span>`
+            ].join('');
+            appendMetaShort($div, timeHtml);
+            renderQueryTime($div);
+
             const viewDetailsHtml = [
                 '<span class="log-meta-short-view-details modal-link" data-bs-toggle="modal" ',
                 `data-bs-target="#query-details" data-${scopedCssData}>View details</span>`
@@ -227,7 +251,8 @@
      * @param {string} metaShort
      */
     function appendMetaShort($div, metaShort) {
-        $div.querySelector('.log-meta-short').innerHTML += ` | ${metaShort}`;
+        const $meta = $div.querySelector('.log-meta-short');
+        $meta.innerHTML += ` | ${metaShort}`;
     }
 
     /**
@@ -255,6 +280,28 @@
             $status.innerHTML = logItem.explain.indexUsed ? '✔' : '❌';
         } else {
             $status.innerHTML = '⌛';
+        }
+    }
+
+    /**
+     * @param {HTMLDivElement} $div
+     */
+    function renderQueryTime($div) {
+        const logItem = logItems$.get($div);
+        const $time = $div.querySelector('.log-meta-short-time');
+        if (!$time) return;
+
+        if (logItem && logItem.responseTime !== null) {
+            const total = logItem.responseTime;
+            $time.innerHTML = `${total}ms`;
+
+            if (total > Number(logStore.slowQueryThresholdMs)) {
+                $time.classList.add('text-danger', 'fw-bold');
+            } else {
+                $time.classList.remove('text-danger', 'fw-bold');
+            }
+        } else {
+            $time.innerHTML = '⌛';
         }
     }
 
@@ -316,6 +363,15 @@
         $indexUsed.value = hasExplain ? (logItem?.explain?.indexUsed ? '✔' : '❌') : null;
 
         $explainQueryErr.value = logItem?.explain?.error ?? null;
+
+        if (logItem && logItem.responseTime !== null) {
+            const total = logItem.responseTime;
+            $queryDetailsTimes.value = `Process time: ${logItem.processTime}ms, Total time: ${total}ms`;
+            isSlowQuery.value = total > Number(logStore.slowQueryThresholdMs);
+        } else {
+            $queryDetailsTimes.value = null;
+            isSlowQuery.value = false;
+        }
     }
 
     /**
@@ -544,6 +600,18 @@
         }
     );
 
+    watch(
+        () => logStore.slowQueryThresholdMs,
+        () => {
+            if (!$log.value) return;
+            for (const $div of $log.value.childNodes) {
+                if ($div.nodeType === Node.ELEMENT_NODE && $div.classList.contains('log-container')) {
+                    renderQueryTime($div);
+                }
+            }
+        }
+    );
+
     /**
      * @param {PointerEvent} ev
      */
@@ -636,6 +704,10 @@
                         <label class="form-label">Query</label>
                         <span class="modal-link small ms-2" @click="onModalBeautifyClicked">{{ modalBeautifyText }}</span>
                         <div v-html="$detailsQuery" class="pre-wrap"></div>
+                    </div>
+                    <div class="mb-3" v-if="$queryDetailsTimes">
+                        <label class="form-label">Execution Details</label>
+                        <div :class="{'text-danger fw-bold': isSlowQuery}">{{ $queryDetailsTimes }}</div>
                     </div>
                     <div class="mb-3" v-if="$indexUsed">
                         <label class="form-label">Index Used</label>
