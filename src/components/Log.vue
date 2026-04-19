@@ -15,6 +15,7 @@
     const logStore = useLogStore();
     let scopedCssData = null;
     const $log = ref();
+    const $scrollContainer = ref();
     const searchInput = defineModel('searchInput', { type: String, default: '' });
     const getNextLogId = (function() {
         let logId = 0;
@@ -41,6 +42,8 @@
     const $explainQueryRes = ref(null);
     const $explainQueryErr = ref(null);
 
+    const zoomLevel = ref(1);
+
     /**
      * A references to log <div> DOM node, to store related data.
      *
@@ -56,7 +59,7 @@
         const time = timeFormat.format(now);
 
         const logId = getNextLogId();
-        const scrolledToBottom = isScrolledToBottom($log.value);
+        const scrolledToBottom = isScrolledToBottom($scrollContainer.value);
 
         const dateHtml = `${date} ${time}`;
         const queryHtml = `<span class="text-info">${text}</span>`;
@@ -79,7 +82,7 @@
         $log.value.appendChild($div);
 
         if (scrolledToBottom) {
-            $log.value.scrollTop = $log.value.scrollHeight;
+            $scrollContainer.value.scrollTop = $scrollContainer.value.scrollHeight;
         }
     }
 
@@ -127,7 +130,7 @@
         if ((dateHtml || shortMetaHtml || queryHtml) && $log.value) {
             const logId = getNextLogId();
 
-            const scrolledToBottom = isScrolledToBottom($log.value);
+            const scrolledToBottom = isScrolledToBottom($scrollContainer.value);
 
             const $tpl = [
                 `<div class="log-date" data-${scopedCssData}>${dateHtml}</div>`,
@@ -155,7 +158,7 @@
             // @TODO keep focus if scrolled, provide a button to scroll to bottom
             // Scroll to the bottom when new messages are added. Only if previously the list was not scrolled already
             if (scrolledToBottom) {
-                $log.value.scrollTop = $log.value.scrollHeight;
+                $scrollContainer.value.scrollTop = $scrollContainer.value.scrollHeight;
             }
 
             if (lastSearchCondition) {
@@ -199,7 +202,7 @@
             appendMetaShort($div, viewDetailsHtml);
 
             const beautifyHtml = [
-                `<span class="log-meta-short-beautify modal-link ms-2" data-${scopedCssData}>Beautify query</span>`
+                `<span class="log-meta-short-beautify modal-link" data-${scopedCssData}>Beautify query</span>`
             ].join('');
             appendMetaShort($div, beautifyHtml);
         }
@@ -542,6 +545,17 @@
         }
     }
 
+    /**
+     * @param {WheelEvent} ev
+     */
+    function handleWheel(ev) {
+        if (ev.ctrlKey) {
+            ev.preventDefault();
+            const delta = ev.deltaY > 0 ? -0.1 : 0.1;
+            zoomLevel.value = Math.min(Math.max(0.5, zoomLevel.value + delta), 3);
+        }
+    }
+
     onMounted(function() {
         initScopedCssData();
 
@@ -581,8 +595,10 @@
                 <button class="btn btn-outline-success text-nowrap" @click.prevent="search">{{totalFound === -1 ? 'Search' : `Search (${currentFound > 0 ? currentFound : 0}/${totalFound})`}}</button>
             </form>
         </div>
-        <div class="overflow-auto p-2 log" ref="$log" @click="logClicked">
-            <i>Start the proxy server to collect logs...</i>
+        <div class="overflow-auto p-2 log" ref="$scrollContainer" @click="logClicked" @wheel="handleWheel">
+            <div ref="$log" :style="{ zoom: zoomLevel }">
+                <i>Start the proxy server to collect logs...</i>
+            </div>
         </div>
     </div>
 
