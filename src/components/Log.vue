@@ -47,6 +47,7 @@
     const $queryDetailsTimes = ref(null);
 
     const zoomLevel = ref(1);
+    const showOnlySaved = ref(false);
 
     /**
      * A references to log <div> DOM node, to store related data.
@@ -90,6 +91,7 @@
         $div.style.paddingTop = '6px';
 
         $log.value.appendChild($div);
+        updateNodeVisibility($div);
 
         if (scrolledToBottom) {
             $scrollContainer.value.scrollTop = $scrollContainer.value.scrollHeight;
@@ -195,6 +197,7 @@
             const scrolledToBottom = isScrolledToBottom($scrollContainer.value);
 
             const $tpl = [
+                `<i class="log-star bi bi-star cursor-pointer me-1" data-${scopedCssData}></i>`,
                 `<div class="log-date" data-${scopedCssData}>${dateHtml}</div>`,
                 `<div class="log-meta-short" data-${scopedCssData}>${shortMetaHtml}</div>`,
                 `<div class="log-query" data-${scopedCssData}>${queryHtml}</div>`,
@@ -212,6 +215,7 @@
             const logItem = {
                 rawQuery: message.query,
                 isBeautified: false,
+                isSaved: false, // Initialize isSaved for this specific log entry
                 sendTime: message.sendTime,
                 processTime: message.processTime,
                 responseTime: message.responseTime,
@@ -224,6 +228,11 @@
                 group.$container.appendChild($div);
             } else {
                 $log.value.appendChild($div);
+            }
+
+            updateNodeVisibility($div);
+            if (logStore.groupSessionQueries && message.connectionId && showOnlySaved.value) {
+                updateSessionGroupsVisibility();
             }
 
             // @TODO keep focus if scrolled, provide a button to scroll to bottom
@@ -282,6 +291,8 @@
                 `<span class="log-meta-short-beautify modal-link" data-${scopedCssData}>Beautify query</span>`
             ].join('');
             appendMetaShort($div, beautifyHtml);
+
+            renderSavedStatus($div);
         }
     });
 
@@ -482,6 +493,40 @@
         return html.join('');
     }
 
+    function toggleShowOnlySaved() {
+        showOnlySaved.value = !showOnlySaved.value;
+        applyVisibilityFilter();
+    }
+
+    function applyVisibilityFilter() {
+        if (!$log.value) return;
+        const allLogContainers = $log.value.querySelectorAll('.log-container');
+        for (const $div of allLogContainers) {
+            updateNodeVisibility($div);
+        }
+        updateSessionGroupsVisibility();
+    }
+
+    function updateNodeVisibility($div) {
+        const logItem = logItems$.get($div);
+        if (showOnlySaved.value) {
+            const isSaved = logItem && logItem.isSaved; // Check logItem.isSaved
+            $div.style.display = isSaved ? '' : 'none';
+        } else {
+            $div.style.display = '';
+        }
+    }
+
+    function updateSessionGroupsVisibility() {
+        if (!$log.value) return;
+        const allGroups = $log.value.querySelectorAll('.session-group');
+        for (const $group of allGroups) {
+            const $container = $group.querySelector('.session-container');
+            const hasVisibleChildren = Array.from($container.childNodes).some($node => $node.style.display !== 'none');
+            $group.style.display = hasVisibleChildren ? '' : 'none';
+        }
+    }
+
     function search() {
         const condition = searchInput.value.trim().toLowerCase();
         if (condition === '') {
@@ -514,12 +559,15 @@
     }
 
     function clearSearch() {
-        const allLogContainers = $log.value.querySelectorAll('.log-container');
-        for (const $msg of allLogContainers) {
-            $msg.classList.remove('highlight');
-            $msg.classList.remove('selected');
+        if ($log.value) {
+            const allLogContainers = $log.value.querySelectorAll('.log-container');
+            for (const $msg of allLogContainers) {
+                $msg.classList.remove('highlight');
+                $msg.classList.remove('selected');
+            }
         }
 
+        foundNodes.clearNodes();
         lastSearchCondition = null;
         focusedSearchIndex = -1;
         totalFound.value = -1;
@@ -606,9 +654,30 @@
     }
 
     function clearLog() {
+        if (!$log.value) return;
         if (confirm('Are you sure you want to clear the log?')) {
-            $log.value.innerHTML = '';
+            const allLogContainers = Array.from($log.value.querySelectorAll('.log-container'));
+            for (const $div of allLogContainers) {
+                const logItem = logItems$.get($div);
+                if (!logItem || !logItem.isSaved) { // Check logItem.isSaved
+                    $div.parentNode.removeChild($div);
+                }
+            }
+
+            // Always clear the session mapping so new sessions start fresh
+            // even if old starred queries from those sessions remain in the DOM.
             sessionGroups.value.clear();
+
+            // Cleanup empty session groups from DOM
+            const allGroups = Array.from($log.value.querySelectorAll('.session-group'));
+            for (const $group of allGroups) {
+                const $container = $group.querySelector('.session-container');
+                if ($container && $container.childNodes.length === 0) {
+                    $group.parentNode.removeChild($group);
+                }
+            }
+
+            clearSearch();
         }
     }
 
@@ -685,10 +754,12 @@
                         group.$container.appendChild($div);
                     }
                 }
+                updateSessionGroupsVisibility();
             } else {
                 // Disable grouping: move all containers back to the root $log and remove group elements
                 const allLogContainers = Array.from($log.value.querySelectorAll('.log-container'));
                 for (const $div of allLogContainers) {
+                    $div.style.display = ''; // Ensure they are visible when ungrouping, though they should be
                     $log.value.appendChild($div);
                 }
 
@@ -698,9 +769,42 @@
                     $group.parentNode.removeChild($group);
                 }
                 sessionGroups.value.clear();
+                applyVisibilityFilter(); // Re-apply filter for flat list
             }
         }
     );
+
+    /**
+     * @param {HTMLElement} $container
+     */
+    function onSaveQueryClicked($container) {
+        const logItem = logItems$.get($container);
+        if (logItem) {
+            logItem.isSaved = !logItem.isSaved; // Toggle isSaved directly on the logItem
+            renderSavedStatus($container);
+        }
+    }
+
+    /**
+     * @param {HTMLDivElement} $div
+     */
+    function renderSavedStatus($div) {
+        const logItem = logItems$.get($div);
+        const $star = $div.querySelector('.log-star');
+        if (logItem && $star) {
+            if (logItem.isSaved) { // Check logItem.isSaved
+                $star.classList.replace('bi-star', 'bi-star-fill');
+                $star.classList.add('text-warning');
+            } else {
+                $star.classList.replace('bi-star-fill', 'bi-star');
+                $star.classList.remove('text-warning');
+            }
+        }
+        updateNodeVisibility($div);
+        if (logStore.groupSessionQueries) {
+            updateSessionGroupsVisibility();
+        }
+    }
 
     /**
      * @param {PointerEvent} ev
@@ -718,6 +822,8 @@
 
         if ($target.classList.contains('log-meta-short-beautify')) {
             onBeautifyClicked($container, $target);
+        } else if ($target.classList.contains('log-star')) {
+            onSaveQueryClicked($container);
         } else {
             onViewDetailsClicked($container);
         }
@@ -740,12 +846,8 @@
         // handle too many messages once every 10 seconds
         // delete all log entries above the maxMsgs amount, if maxMsgs > 0
         setInterval(() => {
-            if (!$log || !maxMsgs) {
-                return;
-            }
-
             const $logValue = $log.value;
-            if (!$logValue) {
+            if (!$logValue || !maxMsgs) {
                 return;
             }
 
@@ -756,6 +858,11 @@
                 for (let i = 0; i < amountToDelete; i++) {
                     const $node = allLogContainers[i];
                     if ($node && $node.parentNode) {
+                        const logItem = logItems$.get($node);
+                        if (logItem && logItem.isSaved) { // Check logItem.isSaved
+                            // Skip removing saved queries
+                            continue;
+                        }
                         $node.parentNode.removeChild($node);
                     }
                 }
@@ -783,7 +890,8 @@
 <template>
     <div class="main-content">
         <div class="p-2 border-bottom" style="padding: 12px 40px 12px 40px !important;">
-            <form class="d-flex">
+            <form class="d-flex align-items-center">
+                <i class="bi fs-4 me-2 cursor-pointer" :class="showOnlySaved ? 'bi-star-fill text-warning' : 'bi-star'" @click="toggleShowOnlySaved" title="Show only saved queries"></i>
                 <input class="form-control me-2" type="search" placeholder="Find a query..." aria-label="Search" v-model="searchInput" @search="search">
                 <button class="btn btn-outline-success text-nowrap" @click.prevent="search">{{totalFound === -1 ? 'Search' : `Search (${currentFound > 0 ? currentFound : 0}/${totalFound})`}}</button>
             </form>
@@ -844,13 +952,20 @@
     .log-container {
         margin-bottom: 10px;
     }
-    .log-date {
+    .log-star,
+    .log-date,
+    .log-meta-short {
         font-size: 0.6em;
+    }
+    .log-star {
+        float: left;
+        line-height: 0.6em;
+    }
+    .log-date {
         line-height: 0.8em;
         float: left;
     }
     .log-meta-short {
-        font-size: 0.6em;
         line-height: 0.8em;
         float: left;
     }
@@ -941,5 +1056,8 @@
     }
     .session-container {
         overflow: hidden;
+    }
+    .cursor-pointer {
+        cursor: pointer;
     }
 </style>

@@ -78,9 +78,9 @@ Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see th
 ## TODO
 
 - [ ] Test if Vitess, TiDB, MariaDB protocols are also supported. Update docs. Reflect supported protocols in UI.
-- [ ] Remember query. A clickable star icon, that puts the query to the saved queries list.
-- [ ] View query. Click on a query to see the query details.
-- [ ] Saved queries should not be removed.
+- [x] Remember query. A clickable star icon, that puts the query to the saved queries list.
+- [x] View query. Click on a query to see the query details.
+- [x] Saved queries should not be removed.
 - [ ] Access saved queries in query viewer.
 - [ ] Debug mode. Make possible to see the internal operations and errors in the main log.
 - [ ] Output time with seconds.
@@ -94,10 +94,10 @@ Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see th
 - [ ] "Scroll to bottom" button.
 - [ ] Refactor code.
 - [ ] Group requests by clientId/session - `[MySQL][127.0.0.1:61513]`?
-- [ ] Beautify query button.
+- [x] Beautify query button.
 - [ ] Multiple connections.
-- [ ] Request time taken.
-- [ ] Slow logs. Configurable.
+- [x] Request time taken.
+- [x] Slow logs. Configurable.
 - [ ] Duplicates counter.
 - [ ] Returned rows amount.
 - [ ] Recommend SQL best practices - * -> list columns, index used columns, coverage indexes,..
