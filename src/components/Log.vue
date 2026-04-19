@@ -5,7 +5,7 @@
     import sql from 'highlight.js/lib/languages/sql';
     import {FoundNodes} from "../lib/FoundNodes.js";
     import {useConnectionsStore, useLogStore} from "../stores.js";
-    import {isSelectQuery} from "../helpers.js";
+    import {beautifySql, isSelectQuery} from "../helpers.js";
     import {getRendererDb} from "../renderer/providers/getRendererDb.js";
     import {d} from "../lib/helpers.js";
 
@@ -144,7 +144,10 @@
             $div.dataset.searchMessage = message.query.toLowerCase();
             $div.style.paddingTop = '6px'; // Bootstrap's mt-2 is not enough, and mt-3 is too much
 
-            const logItem = {};
+            const logItem = {
+                rawQuery: message.query,
+                isBeautified: false
+            };
             logItems$.set($div, logItem);
 
             $log.value.appendChild($div);
@@ -194,6 +197,11 @@
                 `data-bs-target="#query-details" data-${scopedCssData}>View details</span>`
             ].join('');
             appendMetaShort($div, viewDetailsHtml);
+
+            const beautifyHtml = [
+                `<span class="log-meta-short-beautify modal-link ms-2" data-${scopedCssData}>Beautify query</span>`
+            ].join('');
+            appendMetaShort($div, beautifyHtml);
         }
     });
 
@@ -301,6 +309,33 @@
         $indexUsed.value = hasExplain ? (logItem?.explain?.indexUsed ? '✔' : '❌') : null;
 
         $explainQueryErr.value = logItem?.explain?.error ?? null;
+    }
+
+    /**
+     * @param {HTMLElement} $container
+     * @param {HTMLElement} $target
+     */
+    function onBeautifyClicked($container, $target) {
+        const logItem = logItems$.get($container);
+        if (!logItem || !logItem.rawQuery) {
+            return;
+        }
+
+        const $queryNode = $container.querySelector('.log-query');
+        if (!$queryNode) {
+            return;
+        }
+
+        if (logItem.isBeautified) {
+            $queryNode.innerHTML = highlightSql(logItem.rawQuery);
+            $target.innerText = 'Beautify query';
+            logItem.isBeautified = false;
+        } else {
+            const beautified = beautifySql(logItem.rawQuery);
+            $queryNode.innerHTML = highlightSql(beautified);
+            $target.innerText = 'Show original';
+            logItem.isBeautified = true;
+        }
     }
 
     /**
@@ -496,7 +531,13 @@
         }
 
         const $container = $target.closest('.log-container');
-        if ($container) {
+        if (!$container) {
+            return;
+        }
+
+        if ($target.classList.contains('log-meta-short-beautify')) {
+            onBeautifyClicked($container, $target);
+        } else {
             onViewDetailsClicked($container);
         }
     }
@@ -591,17 +632,17 @@
     }
     .log-date {
         font-size: 0.6em;
-        line-height: 0.6em;
+        line-height: 0.8em;
         float: left;
     }
     .log-meta-short {
         font-size: 0.6em;
-        line-height: 0.6em;
+        line-height: 0.8em;
         float: left;
     }
     .log-query {
         clear: both;
-        line-height: 1.4em;
+        line-height: 1.6em;
     }
 
     .log {
