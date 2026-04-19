@@ -16,13 +16,20 @@
             <button class="btn btn-outline-secondary text-nowrap ms-1" @click.prevent="clearLog">Clear log</button>
 
             <div class="mt-3 form-check">
+                <input type="checkbox" class="form-check-input" id="group-session-queries" v-model="logStore.groupSessionQueries">
+                <label class="form-check-label" for="group-session-queries">Group session queries</label>
+                <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Group queries executed during a single session (e.g., PHP page load)."></i>
+            </div>
+
+            <div class="mt-3 form-check">
                 <input type="checkbox" class="form-check-input" id="check-query-index-usages" v-model="logStore.checkQueryIndexesUsage">
                 <label class="form-check-label" for="check-query-index-usages">Check query index usage</label>
-                <i class="bi bi-info-circle small ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Analyze used indexes for SELECT queries. Only for new queries."></i>
+                <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Analyze used indexes for SELECT queries. Only for new queries."></i>
             </div>
 
             <div class="mt-3">
                 <label for="slow-query-threshold" class="form-label">Slow query threshold (ms)</label>
+                <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Highlight queries exceeding the threshold."></i>
                 <input type="number" min="0" step="1" class="form-control" id="slow-query-threshold" v-model.number="logStore.slowQueryThresholdMs">
                 <div v-if="logStore.slowQueryThresholdMs < 0 || !Number.isInteger(logStore.slowQueryThresholdMs)" class="text-danger small mt-1">
                     Slow query threshold (ms) must be a 0 or greater.

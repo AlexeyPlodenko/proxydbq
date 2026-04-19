@@ -16,9 +16,13 @@ export class QueryLogMessage extends LogMessage {
     /** @type {number|null} */
     responseTime = null;
 
-    constructor(commandByte, query) {
+    /** @type {string|null} */
+    connectionId = null;
+
+    constructor(commandByte, query, connectionId = null) {
         super();
         this.commandByte = commandByte;
         this.query = query;
+        this.connectionId = connectionId;
     }
 }

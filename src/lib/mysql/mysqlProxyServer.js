@@ -138,10 +138,12 @@ export function setLogNonQueries(flag) {
  * @return {net.Server} Returns a Node.js `Server` instance configured as a MySQL proxy.
  */
 export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
+    let connectionCounter = 0;
     const server = net.createServer(clientSocket => {
-        const clientId = `[MySQL][${clientSocket.remoteAddress}:${clientSocket.remotePort}]`;
+        const connectionId = ++connectionCounter;
+        const clientId = `[MySQL][${clientSocket.remoteAddress}:${clientSocket.remotePort}][ID:${connectionId}]`;
         if (logNonQueries) {
-            log(`${clientId} Client connected.`);
+            log({ message: `${clientId} Client connected.`, connectionId });
         }
 
         const serverSocket = new net.Socket();
@@ -161,13 +163,17 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
             serverSocket,
             clientSocket,
             clientId,
+            connectionId,
             logNonQueries,
             log: (msg) => {
                 if (msg instanceof QueryLogMessage) {
+                    msg.connectionId = connectionId;
                     if (msg.sendTime === null) {
                         msg.sendTime = Date.now();
                         pendingQueries.set(msg.id, msg);
                     }
+                } else if (typeof msg === 'object' && msg !== null) {
+                    msg.connectionId = connectionId;
                 }
                 log(msg);
             },
@@ -208,7 +214,7 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
 
         serverSocket.connect(dbPort, dbHost, () => {
             if (logNonQueries) {
-                log(`${clientId} Successfully connected to MySQL server ${dbHost}:${dbPort}.`);
+                log({ message: `${clientId} Successfully connected to MySQL server ${dbHost}:${dbPort}.`, connectionId });
             }
             serverConnected = true;
             if (clientBuffer.length > 0) {
@@ -244,7 +250,7 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
             } else {
                 console.error('MySQL client socket not writable for MySQL response.');
 
-                error({ code: MYSQL_PROXY_ERRORS.CLIENT_SOCKET_NOT_WRITABLE, clientId, data,
+                error({ code: MYSQL_PROXY_ERRORS.CLIENT_SOCKET_NOT_WRITABLE, clientId, data, connectionId,
                     message: `Client socket not writable for MySQL response.` });
                 serverSocket.end();
                 return;
@@ -273,7 +279,7 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
 
         clientSocket.on('close', () => {
             if (logNonQueries) {
-                log(`${clientId} Client disconnected.`);
+                log({ message: `${clientId} Client disconnected.`, connectionId });
             }
             if (serverSocket && !serverSocket.destroyed) {
                 serverSocket.end();
@@ -283,7 +289,7 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
         clientSocket.on('error', err => {
             console.error('MySQL client error:', err);
 
-            error({ code: MYSQL_PROXY_ERRORS.CLIENT_SOCKET_ERROR, clientId, error: err,
+            error({ code: MYSQL_PROXY_ERRORS.CLIENT_SOCKET_ERROR, clientId, error: err, connectionId,
                 message: `Client socket error` });
             if (serverSocket && !serverSocket.destroyed) {
                 serverSocket.destroy(err);
@@ -292,7 +298,7 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
 
         serverSocket.on('close', hadError => {
             if (logNonQueries) {
-                log(`${clientId} Disconnected from MySQL server ${hadError ? 'due to an error.' : 'gracefully.'}`);
+                log({ message: `${clientId} Disconnected from MySQL server ${hadError ? 'due to an error.' : 'gracefully.'}`, connectionId });
             }
             if (clientSocket && !clientSocket.destroyed) {
                 clientSocket.end();
@@ -302,9 +308,9 @@ export function createMySQLProxyServer(dbHost, dbPort, proxyHost, proxyPort) {
         serverSocket.on('error', err => {
             console.error('MySQL server error:', err);
 
-            error({ code: MYSQL_PROXY_ERRORS.DB_SOCKET_ERROR, clientId, error: err, message: `MySQL socket error` });
+            error({ code: MYSQL_PROXY_ERRORS.DB_SOCKET_ERROR, clientId, error: err, message: `MySQL socket error`, connectionId });
             if (clientSocket && !clientSocket.destroyed) {
-                error(`${clientId} Closing client connection due to MySQL connection error.`);
+                error({ message: `${clientId} Closing client connection due to MySQL connection error.`, connectionId });
                 clientSocket.destroy(err); // More forceful close
             }
         });

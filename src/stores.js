@@ -4,6 +4,7 @@ import {ref} from "vue";
 export const useLogStore = defineStore('logStore', () => {
     const clearSignal = ref(0);
     const checkQueryIndexesUsage = ref(false);
+    const groupSessionQueries = ref(true);
     const systemMessage = ref(null);
     const slowQueryThresholdMs = ref(100);
 
@@ -22,6 +23,7 @@ export const useLogStore = defineStore('logStore', () => {
         clearSignal,
         triggerClear,
         checkQueryIndexesUsage,
+        groupSessionQueries,
         systemMessage,
         logSystemMessage,
         slowQueryThresholdMs,

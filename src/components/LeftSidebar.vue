@@ -74,23 +74,23 @@
                 <div class="collapse show" style="margin-left: 33px;" id="mysql-collapse">
                     <div class="mb-3">
                         <label for="mysql-server-ip" class="form-label">Target DB server IP (host) *</label>
-                        <i class="bi bi-info-circle small ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="The IP address or hostname of the target MySQL DB server."></i>
+                        <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="The IP address or hostname of the target MySQL DB server."></i>
                         <input type="text" class="form-control" id="mysql-server-ip" v-model="mysqlServerIp">
                     </div>
                     <div class="mb-3">
                         <label for="mysql-server-port" class="form-label">Target DB server port *</label>
-                        <i class="bi bi-info-circle small ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="The port of the target MySQL DB server (default 3306)."></i>
+                        <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="The port of the target MySQL DB server (default 3306)."></i>
                         <input type="text" class="form-control" id="mysql-server-port" v-model="mysqlServerPort">
                     </div>
                     <div class="mb-3">
                         <label for="mysql-proxy-port" class="form-label">Local proxy port *</label>
-                        <i class="bi bi-info-circle small ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="A local port to start the proxy server on. Your code or MySQL client should point to that."></i>
+                        <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="A local port to start the proxy server on. Your code or MySQL client should point to that."></i>
                         <input type="text" class="form-control" id="mysql-proxy-port" v-model="mysqlProxyPort">
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="mysql-proxy-localhost" v-model="mysqlProxyLocalhost">
                         <label class="form-check-label" for="mysql-proxy-localhost">Listen on localhost only</label>
-                        <i class="bi bi-info-circle small ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Should the proxy server listen on localhost (127.0.0.1) or all network interfaces? Should the proxy server be available externally?"></i>
+                        <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Should the proxy server listen on localhost (127.0.0.1) or all network interfaces? Should the proxy server be available externally?"></i>
                     </div>
 <!--                    <div class="mb-3">-->
 <!--                        <label for="local-proxy-ip" class="form-label">Local proxy IP</label>-->
@@ -104,6 +104,7 @@
 
                     <div class="mt-3">
                         <label for="mysql-proxy-login" class="form-label">Login</label>
+                        <i class="bi bi-info-circle small ms-2 text-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Specify login to perform query analysis, like index usage."></i>
                         <input type="text" class="form-control" id="mysql-proxy-login" v-model="mysqlServerLogin">
                     </div>
 

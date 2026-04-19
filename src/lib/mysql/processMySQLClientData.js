@@ -24,6 +24,7 @@
  * @param {import('net').Socket} deps.serverSocket
  * @param {import('net').Socket} deps.clientSocket
  * @param {string} deps.clientId
+ * @param {string|number} deps.connectionId
  * @param {boolean} deps.logNonQueries
  * @param {(data: any) => void} deps.log
  * @param {(data: any) => void} deps.error
@@ -41,6 +42,7 @@ export function createProcessMySQLClientData({
     serverSocket,
     clientSocket,
     clientId,
+    connectionId,
     logNonQueries,
     log,
     error,
@@ -127,7 +129,7 @@ export function createProcessMySQLClientData({
                     if (payload.length > 1) {
                         switch (commandByte) {
                             case COM_QUERY:
-                                log(new QueryLogMessage(COM_QUERY, payload.subarray(1).toString('utf8')));
+                                log(new QueryLogMessage(COM_QUERY, payload.subarray(1).toString('utf8'), connectionId));
                                 break;
 
                             case COM_STMT_PREPARE: {
@@ -135,6 +137,7 @@ export function createProcessMySQLClientData({
                                 const last = {
                                     payload,
                                     clientId,
+                                    connectionId,
                                     sequenceId,
                                     commandByte,
                                     query: payload.subarray(1).toString('utf8'),
@@ -153,7 +156,7 @@ export function createProcessMySQLClientData({
 
                                 statement.setExecuteStatementQuery(payload);
 
-                                log(new QueryLogMessage(COM_STMT_EXECUTE, statement.getQueryWithParameters()));
+                                log(new QueryLogMessage(COM_STMT_EXECUTE, statement.getQueryWithParameters(), connectionId));
 
                                 preparedStatements.deleteStatement(statementId);
                                 break;
@@ -171,6 +174,7 @@ export function createProcessMySQLClientData({
                             log({
                                 payload,
                                 clientId,
+                                connectionId,
                                 sequenceId,
                                 commandByte,
                                 dbName: payload.length > 1 ? payload.subarray(1).toString('utf8') : null,
@@ -178,18 +182,19 @@ export function createProcessMySQLClientData({
                             });
                             break;
                         case COM_QUIT:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_QUIT' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_QUIT' });
                             break;
                         case COM_PING:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_PING' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_PING' });
                             break;
                         case COM_FIELD_LIST:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_FIELD_LIST' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_FIELD_LIST' });
                             break;
                         case COM_CREATE_DB:
                             log({
                                 payload,
                                 clientId,
+                                connectionId,
                                 sequenceId,
                                 commandByte,
                                 dbName: payload.length > 1 ? payload.subarray(1).toString('utf8') : null,
@@ -200,6 +205,7 @@ export function createProcessMySQLClientData({
                             log({
                                 payload,
                                 clientId,
+                                connectionId,
                                 sequenceId,
                                 commandByte,
                                 dbName: payload.length > 1 ? payload.subarray(1).toString('utf8') : null,
@@ -207,37 +213,38 @@ export function createProcessMySQLClientData({
                             });
                             break;
                         case COM_REFRESH:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_REFRESH' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_REFRESH' });
                             break;
                         case COM_STATISTICS:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_STATISTICS' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_STATISTICS' });
                             break;
                         case COM_PROCESS_INFO:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_PROCESS_INFO' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_PROCESS_INFO' });
                             break;
                         case COM_CONNECT:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_CONNECT' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_CONNECT' });
                             break;
                         case COM_PROCESS_KILL:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_PROCESS_KILL' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_PROCESS_KILL' });
                             break;
                         case COM_DEBUG:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_DEBUG' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_DEBUG' });
                             break;
                         case COM_CHANGE_USER:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_CHANGE_USER' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_CHANGE_USER' });
                             break;
                         case COM_RESET_CONNECTION:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_RESET_CONNECTION' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_RESET_CONNECTION' });
                             break;
                         case COM_SET_OPTION:
-                            log({ payload, clientId, sequenceId, commandByte, message: 'Client sent COM_SET_OPTION' });
+                            log({ payload, clientId, connectionId, sequenceId, commandByte, message: 'Client sent COM_SET_OPTION' });
                             break;
                         default:
                             // Log other command types with their hex values for better debugging
                             log({
                                 payload,
                                 clientId,
+                                connectionId,
                                 sequenceId,
                                 commandByte,
                                 message: 'Unknown command',
@@ -257,6 +264,7 @@ export function createProcessMySQLClientData({
                     code: MYSQL_PROXY_ERRORS.DB_SOCKET_NOT_WRITABLE,
                     payload,
                     clientId,
+                    connectionId,
                     sequenceId,
                     message: 'MySQL socket not writable. Cannot forward packet.',
                 });

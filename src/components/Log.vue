@@ -55,6 +55,12 @@
      */
     const logItems$ = new WeakMap();
 
+    /**
+     * Stores session group references.
+     * @type {Ref<Map<any, {$group: HTMLDivElement, $container: HTMLDivElement}>>}
+     */
+    const sessionGroups = ref(new Map());
+
     function logSystemMessage(text, timestamp) {
         if (!$log.value) return;
 
@@ -90,6 +96,58 @@
         }
     }
 
+    /**
+     * @param {any} connectionId
+     * @returns {{$group: HTMLDivElement, $container: HTMLDivElement}}
+     */
+    function getOrCreateSessionGroup(connectionId) {
+        if (sessionGroups.value.has(connectionId)) {
+            return sessionGroups.value.get(connectionId);
+        }
+
+        const $group = document.createElement('div');
+        $group.classList.add('session-group');
+        $group.dataset[scopedCssData] = '';
+
+        const $header = document.createElement('div');
+        $header.classList.add('session-header');
+        $header.dataset[scopedCssData] = '';
+        $header.innerHTML = `<i class="bi bi-chevron-down me-2 toggle-icon"></i>Session #${connectionId}`;
+        $header.onclick = () => toggleSession($group);
+        $group.appendChild($header);
+
+        const $wrapper = document.createElement('div');
+        $wrapper.classList.add('session-container-wrapper');
+        $wrapper.dataset[scopedCssData] = '';
+
+        const $container = document.createElement('div');
+        $container.classList.add('session-container');
+        $container.dataset[scopedCssData] = '';
+
+        $wrapper.appendChild($container);
+        $group.appendChild($wrapper);
+
+        $log.value.appendChild($group);
+
+        const groupData = {$group, $container};
+        sessionGroups.value.set(connectionId, groupData);
+        return groupData;
+    }
+
+    /**
+     * @param {HTMLElement} $group
+     */
+    function toggleSession($group) {
+        const $icon = $group.querySelector('.toggle-icon');
+        if ($group.classList.contains('collapsed')) {
+            $group.classList.remove('collapsed');
+            $icon.classList.replace('bi-chevron-right', 'bi-chevron-down');
+        } else {
+            $group.classList.add('collapsed');
+            $icon.classList.replace('bi-chevron-down', 'bi-chevron-right');
+        }
+    }
+
     window.electronAPI.onProxyMessage(async (message) => {
         // must be an object with a commandByte and query keys in
         if (!(typeof message === 'object' && 'commandByte' in message && 'query' in message)) {
@@ -122,20 +180,7 @@
                 queryHtml = highlightSql(message.query);
                 break;
 
-            // COM_STMT_PREPARE (22) queries come combined in COM_STMT_EXECUTE (23)
-            // case 22: // COM_STMT_PREPARE
-            //     output = `<span class="small" data-${scopedCssData}>${date} ${time}:</span> ${highlightSql(message.query)}`;
-            //     break;
-
             case 23: // COM_STMT_EXECUTE
-                // formatting the values
-
-                // console.error('Amount of parameters and placeholders in query is different.',
-                //     message.statement.query, message.statement.paramValues);
-                //
-                // alert('Error. Amount of parameters and placeholders in query is different.'
-                //     +' Check Chrome Developer Console for details.');
-
                 queryHtml = highlightSql(message.query);
                 break;
 
@@ -170,10 +215,16 @@
                 sendTime: message.sendTime,
                 processTime: message.processTime,
                 responseTime: message.responseTime,
+                connectionId: message.connectionId,
             };
             logItems$.set($div, logItem);
 
-            $log.value.appendChild($div);
+            if (logStore.groupSessionQueries && message.connectionId) {
+                const group = getOrCreateSessionGroup(message.connectionId);
+                group.$container.appendChild($div);
+            } else {
+                $log.value.appendChild($div);
+            }
 
             // @TODO keep focus if scrolled, provide a button to scroll to bottom
             // Scroll to the bottom when new messages are added. Only if previously the list was not scrolled already
@@ -463,7 +514,8 @@
     }
 
     function clearSearch() {
-        for (const $msg of $log.value.childNodes) {
+        const allLogContainers = $log.value.querySelectorAll('.log-container');
+        for (const $msg of allLogContainers) {
             $msg.classList.remove('highlight');
             $msg.classList.remove('selected');
         }
@@ -481,7 +533,7 @@
     function searchNodes(condition, $nodes = null) {
         if (!$nodes) {
             // when there are no nodes supplied, let's use the whole list of nodes
-            $nodes = $log.value.childNodes;
+            $nodes = $log.value.querySelectorAll('.log-container');
         }
 
         // iterate messages
@@ -508,6 +560,12 @@
         for (const $node of $nodes) {
             $node.classList.add('highlight');
             foundNodes.addNode($node);
+
+            // If a node is highlighted, ensure its parent session group is expanded
+            const $group = $node.closest('.session-group');
+            if ($group && $group.classList.contains('collapsed')) {
+                toggleSession($group);
+            }
         }
     }
 
@@ -550,6 +608,7 @@
     function clearLog() {
         if (confirm('Are you sure you want to clear the log?')) {
             $log.value.innerHTML = '';
+            sessionGroups.value.clear();
         }
     }
 
@@ -604,10 +663,41 @@
         () => logStore.slowQueryThresholdMs,
         () => {
             if (!$log.value) return;
-            for (const $div of $log.value.childNodes) {
-                if ($div.nodeType === Node.ELEMENT_NODE && $div.classList.contains('log-container')) {
-                    renderQueryTime($div);
+            const allLogContainers = $log.value.querySelectorAll('.log-container');
+            for (const $div of allLogContainers) {
+                renderQueryTime($div);
+            }
+        }
+    );
+
+    watch(
+        () => logStore.groupSessionQueries,
+        (newValue) => {
+            if (!$log.value) return;
+
+            if (newValue) {
+                // Enable grouping: move existing containers into session groups
+                const allLogContainers = Array.from($log.value.querySelectorAll('.log-container'));
+                for (const $div of allLogContainers) {
+                    const logItem = logItems$.get($div);
+                    if (logItem && logItem.connectionId) {
+                        const group = getOrCreateSessionGroup(logItem.connectionId);
+                        group.$container.appendChild($div);
+                    }
                 }
+            } else {
+                // Disable grouping: move all containers back to the root $log and remove group elements
+                const allLogContainers = Array.from($log.value.querySelectorAll('.log-container'));
+                for (const $div of allLogContainers) {
+                    $log.value.appendChild($div);
+                }
+
+                // Remove all session group elements
+                const allGroups = $log.value.querySelectorAll('.session-group');
+                for (const $group of allGroups) {
+                    $group.parentNode.removeChild($group);
+                }
+                sessionGroups.value.clear();
             }
         }
     );
@@ -659,16 +749,31 @@
                 return;
             }
 
-            const $logChildNodes = $logValue.childNodes;
-            const msgsAmount = $logChildNodes.length;
+            const allLogContainers = $logValue.querySelectorAll('.log-container');
+            const msgsAmount = allLogContainers.length;
             if (msgsAmount > maxMsgs) {
                 const amountToDelete = msgsAmount - maxMsgs;
                 for (let i = 0; i < amountToDelete; i++) {
-                    if (!$logValue.childNodes.length) {
-                        break;
+                    const $node = allLogContainers[i];
+                    if ($node && $node.parentNode) {
+                        $node.parentNode.removeChild($node);
                     }
-                    // always delete the top most node
-                    $logValue.removeChild($logValue.childNodes[0]);
+                }
+
+                // Cleanup empty session groups
+                const allGroups = $logValue.querySelectorAll('.session-group');
+                for (const $group of allGroups) {
+                    const $container = $group.querySelector('.session-container');
+                    if ($container && $container.childNodes.length === 0) {
+                        $group.parentNode.removeChild($group);
+                        // Also remove from sessionGroups map
+                        for (let [id, data] of sessionGroups.value.entries()) {
+                            if (data.$group === $group) {
+                                sessionGroups.value.delete(id);
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }, 9999);
@@ -802,5 +907,39 @@
 
     .form-label {
         font-weight: bold;
+    }
+
+    .session-group {
+        border-left: 3px solid #0d6efd;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        padding-left: 10px;
+        background: rgba(13, 110, 253, 0.05);
+    }
+    .session-header {
+        font-weight: bold;
+        color: #0d6efd;
+        font-size: 0.9em;
+        cursor: pointer;
+        user-select: none;
+        padding: 5px 0;
+    }
+    .session-header:hover {
+        background: rgba(13, 110, 253, 0.1);
+    }
+    .toggle-icon {
+        transition: transform 100ms;
+    }
+
+    .session-container-wrapper {
+        display: grid;
+        grid-template-rows: 1fr;
+        transition: grid-template-rows 100ms ease-in-out;
+    }
+    .session-group.collapsed .session-container-wrapper {
+        grid-template-rows: 0fr;
+    }
+    .session-container {
+        overflow: hidden;
     }
 </style>
