@@ -892,8 +892,8 @@
     }
 
     .modal-link {
-        color: #0d6efd;
-        border-bottom: 1px dashed #0d6efd;
+        color: var(--bs-primary);
+        border-bottom: 1px dashed var(--bs-primary);
         cursor: pointer;
         user-select: none;
     }
@@ -910,22 +910,22 @@
     }
 
     .session-group {
-        border-left: 3px solid #0d6efd;
+        border-left: 3px solid var(--bs-primary);
         margin-top: 15px;
         margin-bottom: 15px;
         padding-left: 10px;
-        background: rgba(13, 110, 253, 0.05);
+        background: rgba(var(--bs-primary-rgb), 0.05);
     }
     .session-header {
         font-weight: bold;
-        color: #0d6efd;
+        color: var(--bs-primary);
         font-size: 0.9em;
         cursor: pointer;
         user-select: none;
         padding: 5px 0;
     }
     .session-header:hover {
-        background: rgba(13, 110, 253, 0.1);
+        background: rgba(var(--bs-primary-rgb), 0.1);
     }
     .toggle-icon {
         transition: transform 100ms;

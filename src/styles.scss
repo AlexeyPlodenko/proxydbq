@@ -9,6 +9,36 @@ html[data-bs-theme="light"] {
 }
 html[data-bs-theme="dark"] {
   @include meta.load-css("highlight.js/styles/a11y-dark");
+
+  --bs-primary: #6ea8fe;
+  --bs-primary-rgb: 110, 168, 254;
+
+  .btn-outline-primary {
+    --bs-btn-color: #6ea8fe;
+    --bs-btn-border-color: #6ea8fe;
+    --bs-btn-hover-bg: #6ea8fe;
+    --bs-btn-hover-border-color: #6ea8fe;
+    --bs-btn-active-bg: #6ea8fe;
+    --bs-btn-active-border-color: #6ea8fe;
+    --bs-btn-disabled-color: #6ea8fe;
+    --bs-btn-disabled-border-color: #6ea8fe;
+  }
+
+  .btn-primary {
+    --bs-btn-bg: #6ea8fe;
+    --bs-btn-border-color: #6ea8fe;
+    --bs-btn-hover-bg: #5886cb;
+    --bs-btn-hover-border-color: #5886cb;
+    --bs-btn-active-bg: #5886cb;
+    --bs-btn-active-border-color: #5886cb;
+    --bs-btn-disabled-bg: #6ea8fe;
+    --bs-btn-disabled-border-color: #6ea8fe;
+  }
+
+  .text-primary {
+    --bs-text-opacity: 1;
+    color: rgba(110, 168, 254, var(--bs-text-opacity)) !important;
+  }
 }
 
 body {
