@@ -37,6 +37,8 @@
     const currentFound = ref(-1);
 
     const $detailsQuery = ref(null);
+    const currentLogContainer = ref(null);
+    const modalBeautifyText = ref('Beautify query');
     const $indexUsed = ref(null);
     const $explainQuery = ref(null);
     const $explainQueryRes = ref(null);
@@ -291,10 +293,12 @@
      * @param {HTMLElement} $container
      */
     function onViewDetailsClicked($container) {
+        currentLogContainer.value = $container;
         const $queryNode = $container.querySelector('.log-query');
         $detailsQuery.value = $queryNode ? $queryNode.innerHTML : null;
 
         const logItem = logItems$.get($container);
+        modalBeautifyText.value = logItem?.isBeautified ? 'Show original' : 'Beautify query';
 
         $explainQuery.value = logItem?.explain?.query ? highlightSql(logItem.explain.query) : null;
 
@@ -338,6 +342,22 @@
             $queryNode.innerHTML = highlightSql(beautified);
             $target.innerText = 'Show original';
             logItem.isBeautified = true;
+        }
+    }
+
+    function onModalBeautifyClicked() {
+        if (!currentLogContainer.value) {
+            return;
+        }
+
+        const $beautifyLink = currentLogContainer.value.querySelector('.log-meta-short-beautify');
+        if ($beautifyLink) {
+            onBeautifyClicked(currentLogContainer.value, $beautifyLink);
+
+            const logItem = logItems$.get(currentLogContainer.value);
+            const $queryNode = currentLogContainer.value.querySelector('.log-query');
+            $detailsQuery.value = $queryNode ? $queryNode.innerHTML : null;
+            modalBeautifyText.value = logItem.isBeautified ? 'Show original' : 'Beautify query';
         }
     }
 
@@ -595,7 +615,7 @@
                 <button class="btn btn-outline-success text-nowrap" @click.prevent="search">{{totalFound === -1 ? 'Search' : `Search (${currentFound > 0 ? currentFound : 0}/${totalFound})`}}</button>
             </form>
         </div>
-        <div class="overflow-auto p-2 log" ref="$scrollContainer" @click="logClicked" @wheel="handleWheel">
+        <div class="overflow-auto p-2 log pre-wrap" ref="$scrollContainer" @click="logClicked" @wheel="handleWheel">
             <div ref="$log" :style="{ zoom: zoomLevel }">
                 <i>Start the proxy server to collect logs...</i>
             </div>
@@ -606,15 +626,16 @@
         <div class="modal-dialog modal-almost-fullscreen">
             <div class="modal-content">
                 <div class="modal-header">
-                    <div>
-                        <h1 class="modal-title fs-5" id="query-details-label">Query details</h1>
+                    <div class="d-flex align-items-center">
+                        <h1 class="modal-title fs-5 me-3" id="query-details-label">Query details</h1>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Query</label>
-                        <div v-html="$detailsQuery"></div>
+                        <span class="modal-link small ms-2" @click="onModalBeautifyClicked">{{ modalBeautifyText }}</span>
+                        <div v-html="$detailsQuery" class="pre-wrap"></div>
                     </div>
                     <div class="mb-3" v-if="$indexUsed">
                         <label class="form-label">Index Used</label>
@@ -665,8 +686,10 @@
         width: 100%;
         height: calc(100vh - 60px);
         overflow: auto;
-        white-space: pre-wrap;
         word-wrap: break-word;
+    }
+    .pre-wrap {
+        white-space: pre-wrap;
     }
 
     .main-content {
@@ -695,6 +718,7 @@
         color: #0d6efd;
         border-bottom: 1px dashed #0d6efd;
         cursor: pointer;
+        user-select: none;
     }
 
     .modal-almost-fullscreen {
