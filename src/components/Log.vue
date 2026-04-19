@@ -28,7 +28,7 @@
         month: '2-digit',
         day: '2-digit',
     });
-    const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+    const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     const maxMsgs = 1000; // @TODO make maxMsgs configurable
     const foundNodes = new FoundNodes();
     let lastSearchCondition = null;
@@ -935,8 +935,7 @@
                         <div v-html="$explainQueryRes"></div>
                     </div>
                     <div class="mb-3" v-if="$explainQueryErr">
-                        <label class="form-label">Explain Query Error</label>
-                        <div>{{ $explainQueryErr }}</div>
+                        <label class="form-label">Explain Query Error</label><div>{{ $explainQueryErr }}</div>
                     </div>
                 </div>
 <!--                <div class="modal-footer">-->
