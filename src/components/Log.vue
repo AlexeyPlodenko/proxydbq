@@ -48,6 +48,7 @@
 
     const zoomLevel = ref(1);
     const showOnlySaved = ref(false);
+    const showScrollBottom = ref(false);
 
     /**
      * A references to log <div> DOM node, to store related data.
@@ -353,7 +354,7 @@
         const $time = $div.querySelector('.log-meta-short-time');
         if (!$time) return;
 
-        if (logItem && logItem.responseTime !== null) {
+        if (logItem && logStore.slowQueryThresholdMs && logItem.responseTime !== null) {
             const total = logItem.responseTime;
             $time.innerHTML = `${total}ms`;
 
@@ -692,6 +693,18 @@
         return $node.scrollHeight - $node.scrollTop - $node.clientHeight <= tolerance;
     }
 
+    function handleScroll() {
+        if ($scrollContainer.value) {
+            showScrollBottom.value = !isScrolledToBottom($scrollContainer.value);
+        }
+    }
+
+    function scrollToBottom() {
+        if ($scrollContainer.value) {
+            $scrollContainer.value.scrollTop = $scrollContainer.value.scrollHeight;
+        }
+    }
+
     function initScopedCssData() {
         for (const key in $log.value.dataset) {
             if (key.startsWith('v-')) {
@@ -896,11 +909,15 @@
                 <button class="btn btn-outline-success text-nowrap" @click.prevent="search">{{totalFound === -1 ? 'Search' : `Search (${currentFound > 0 ? currentFound : 0}/${totalFound})`}}</button>
             </form>
         </div>
-        <div class="overflow-auto p-2 log pre-wrap" ref="$scrollContainer" @click="logClicked" @wheel="handleWheel">
+        <div class="overflow-auto p-2 log pre-wrap" ref="$scrollContainer" @click="logClicked" @wheel="handleWheel" @scroll="handleScroll">
             <div ref="$log" :style="{ zoom: zoomLevel }">
                 <i>Start the proxy server to collect logs...</i>
             </div>
         </div>
+
+        <button v-if="showScrollBottom" class="btn btn-primary scroll-bottom-btn" @click="scrollToBottom" title="Scroll to bottom">
+            <i class="bi bi-arrow-down"></i>
+        </button>
     </div>
 
     <div class="modal fade" id="query-details" tabindex="-1" aria-labelledby="query-details-label" aria-hidden="true">
@@ -978,6 +995,7 @@
         height: calc(100vh - 60px);
         overflow: auto;
         word-wrap: break-word;
+        scroll-behavior: smooth;
     }
     .pre-wrap {
         white-space: pre-wrap;
@@ -989,6 +1007,7 @@
         height: 100vh;
         flex: 1;
         overflow: hidden;
+        position: relative;
     }
 
     .selected {
@@ -1058,5 +1077,20 @@
     }
     .cursor-pointer {
         cursor: pointer;
+    }
+
+    .scroll-bottom-btn {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        padding: 0;
     }
 </style>
