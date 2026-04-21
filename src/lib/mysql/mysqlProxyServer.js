@@ -375,6 +375,56 @@ export async function sendSqlQuery$(query, host, port, login, password, database
 }
 
 /**
+ * Fetches all table schemas from the specified database.
+ *
+ * @param {string} host
+ * @param {string} port
+ * @param {string} login
+ * @param {string} password
+ * @param {string} database
+ * @returns {Promise<Record<string, Array<{column: string, type: string, nullable: boolean, key: string, default: any, extra: string, fullType: string}>>>}
+ */
+export async function fetchTableSchemas$(host, port, login, password, database) {
+    const client = await getMysqlClient$({ host, port, user: login, password, database });
+    await client.connect$();
+
+    const sql = `
+        SELECT 
+            TABLE_NAME, 
+            COLUMN_NAME, 
+            DATA_TYPE, 
+            IS_NULLABLE, 
+            COLUMN_KEY, 
+            COLUMN_DEFAULT, 
+            EXTRA,
+            COLUMN_TYPE
+        FROM information_schema.columns 
+        WHERE table_schema = ?
+        ORDER BY TABLE_NAME, ORDINAL_POSITION
+    `;
+
+    const { rows } = await client.query$(sql, [database]);
+
+    const schemas = {};
+    rows.forEach(row => {
+        if (!schemas[row.TABLE_NAME]) {
+            schemas[row.TABLE_NAME] = [];
+        }
+        schemas[row.TABLE_NAME].push({
+            column: row.COLUMN_NAME,
+            type: row.DATA_TYPE,
+            nullable: row.IS_NULLABLE === 'YES',
+            key: row.COLUMN_KEY,
+            default: row.COLUMN_DEFAULT,
+            extra: row.EXTRA,
+            fullType: row.COLUMN_TYPE
+        });
+    });
+
+    return schemas;
+}
+
+/**
  * Shuts down the running proxy servers for MySQL.
  *
  * @return {void}

@@ -27,6 +27,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return callback(value);
     }),
 
+    fetchTableSchemas: (dbHost, dbPort, dbLogin, dbPassword, dbName) => {
+        return ipcRenderer.send('fetchTableSchemas', dbHost, dbPort, dbLogin, dbPassword, dbName);
+    },
+
+    onFetchTableSchemasResult: (callback) => ipcRenderer.once('fetchTableSchemasResult', (ev, value) => {
+        return callback(value);
+    }),
+
     onProxyMessage: (callback) => ipcRenderer.on('logProxyMessages', (ev, value) => {
         return callback(value);
     }),

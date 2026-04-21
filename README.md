@@ -99,7 +99,7 @@ Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see th
 - [x] Request time taken.
 - [x] Slow logs. Configurable.
 - [ ] Duplicates counter.
-- [ ] Duplicates highlight.
+- [x] Duplicates highlight.
 - [ ] Returned rows amount.
 - [ ] Recommend SQL best practices - * -> list columns, index used columns, coverage indexes,..
 - [ ] Recommend schema/query/index performance/normalization/denormalization improvements by analyzing query history.

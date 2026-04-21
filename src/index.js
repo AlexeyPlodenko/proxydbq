@@ -7,7 +7,7 @@ import {
     createMySQLProxyServer,
     setLogCallback,
     setErrorCallback,
-    shutdownProxyServers, sendSqlQuery$
+    shutdownProxyServers, sendSqlQuery$, fetchTableSchemas$
 } from "./lib/mysql/mysqlProxyServer.js";
 import {d} from "./lib/helpers.js";
 import xxHashAddon from 'xxhash-addon';
@@ -155,6 +155,15 @@ app.on('ready', () => {
             event.reply('fetchFromDbResult', { ok: true, result });
         } catch (err) {
             event.reply('fetchFromDbResult', { ok: false, error: err && err.message ? err.message : String(err) });
+        }
+    });
+
+    ipcMain.on('fetchTableSchemas', async (event, host, port, login, password, database) => {
+        try {
+            const schemas = await fetchTableSchemas$(host, port, login, password, database);
+            event.reply('fetchTableSchemasResult', { ok: true, schemas });
+        } catch (err) {
+            event.reply('fetchTableSchemasResult', { ok: false, error: err && err.message ? err.message : String(err) });
         }
     });
 
