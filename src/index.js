@@ -10,6 +10,7 @@ import {
     shutdownProxyServers, sendSqlQuery$
 } from "./lib/mysql/mysqlProxyServer.js";
 import {d} from "./lib/helpers.js";
+import xxHashAddon from 'xxhash-addon';
 
 // Get the directory path in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -155,6 +156,12 @@ app.on('ready', () => {
         } catch (err) {
             event.reply('fetchFromDbResult', { ok: false, error: err && err.message ? err.message : String(err) });
         }
+    });
+
+    // Added ipcMain.handle for hash-query
+    ipcMain.handle('hash-query', (event, query) => {
+        const buffer = Buffer.from(query);
+        return xxHashAddon.XXHash3.hash(buffer).toString('hex');
     });
 
     createWindow().catch(err => {

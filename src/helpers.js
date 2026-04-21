@@ -88,3 +88,23 @@ export function beautifySql(sql) {
 
     return result.join('\n').trim();
 }
+
+/**
+ * Normalizes a SQL query for comparison purposes.
+ * Removes comments, standardizes whitespace, and converts to lowercase.
+ *
+ * @param {string} sql
+ * @returns {string}
+ */
+export function normalizeQuery(sql) {
+    if (!sql || typeof sql !== 'string') {
+        return '';
+    }
+
+    return sql
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove C-style comments
+        .replace(/--.*$/gm, '')           // Remove SQL-style comments
+        .replace(/\s+/g, ' ')             // Standardize whitespace
+        .trim()
+        .toLowerCase();
+}

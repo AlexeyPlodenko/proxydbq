@@ -29,5 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     onProxyMessage: (callback) => ipcRenderer.on('logProxyMessages', (ev, value) => {
         return callback(value);
-    })
+    }),
+
+    hashQuery: (query) => {
+        return ipcRenderer.invoke('hash-query', query);
+    }
 });

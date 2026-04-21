@@ -91,7 +91,7 @@ Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see th
 - [ ] Window focus on search match. Highlight, expand and focus on app window when the search has a match.
 - [ ] Show amount of search matches in search panel.
 - [ ] Allow to navigate between search matches.
-- [ ] "Scroll to bottom" button.
+- [x] "Scroll to bottom" button.
 - [ ] Refactor code.
 - [ ] Group requests by clientId/session - `[MySQL][127.0.0.1:61513]`?
 - [x] Beautify query button.
@@ -99,7 +99,10 @@ Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see th
 - [x] Request time taken.
 - [x] Slow logs. Configurable.
 - [ ] Duplicates counter.
+- [ ] Duplicates highlight.
 - [ ] Returned rows amount.
 - [ ] Recommend SQL best practices - * -> list columns, index used columns, coverage indexes,..
 - [ ] Recommend schema/query/index performance/normalization/denormalization improvements by analyzing query history.
 - [ ] Notify about N+1 queries.
+- [ ] Highlight query on mouse hover
+- [ ] Make maxMsgs in Log.vue configurable

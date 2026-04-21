@@ -5,11 +5,13 @@ export const useLogStore = defineStore('logStore', () => {
     const clearSignal = ref(0);
     const checkQueryIndexesUsage = ref(false);
     const groupSessionQueries = ref(true);
+    const highlightDuplicateQueries = ref(false); // New ref for duplicate queries
+    const duplicateQueryStrings = ref(new Set()); // New Set to store query strings for duplicate detection
     const systemMessage = ref(null);
     const slowQueryThresholdMs = ref(100);
 
     function triggerClear() {
-        clearSignal.value++
+        clearSignal.value++;
     }
 
     function logSystemMessage(text) {
@@ -24,6 +26,8 @@ export const useLogStore = defineStore('logStore', () => {
         triggerClear,
         checkQueryIndexesUsage,
         groupSessionQueries,
+        highlightDuplicateQueries, // Expose the new ref
+        duplicateQueryStrings, // Expose the Set
         systemMessage,
         logSystemMessage,
         slowQueryThresholdMs,

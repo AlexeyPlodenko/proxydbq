@@ -5,7 +5,7 @@
     import sql from 'highlight.js/lib/languages/sql';
     import {FoundNodes} from "../lib/FoundNodes.js";
     import {useConnectionsStore, useLogStore} from "../stores.js";
-    import {beautifySql, isSelectQuery} from "../helpers.js";
+    import {beautifySql, isSelectQuery, normalizeQuery} from "../helpers.js";
     import {getRendererDb} from "../renderer/providers/getRendererDb.js";
     import {d} from "../lib/helpers.js";
 
@@ -31,6 +31,7 @@
     const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     const maxMsgs = 1000; // @TODO make maxMsgs configurable
     const foundNodes = new FoundNodes();
+    const firstOccurrences = new Map();
     let lastSearchCondition = null;
     let focusedSearchIndex = -1;
     const totalFound = ref(-1);
@@ -45,6 +46,7 @@
     const $explainQueryRes = ref(null);
     const $explainQueryErr = ref(null);
     const $queryDetailsTimes = ref(null);
+    const $duplicateCount = ref(null);
 
     const zoomLevel = ref(1);
     const showOnlySaved = ref(false);
@@ -76,6 +78,10 @@
         const dateHtml = `${date} ${time}`;
         const queryHtml = `<span class="text-info">${text}</span>`;
 
+        if (!scopedCssData) {
+            initScopedCssData();
+        }
+
         const $tpl = [
             `<div class="log-date" data-${scopedCssData}>${dateHtml}</div>`,
             `<div class="log-meta-short" data-${scopedCssData}></div>`,
@@ -106,6 +112,10 @@
     function getOrCreateSessionGroup(connectionId) {
         if (sessionGroups.value.has(connectionId)) {
             return sessionGroups.value.get(connectionId);
+        }
+
+        if (!scopedCssData) {
+            initScopedCssData();
         }
 
         const $group = document.createElement('div');
@@ -151,13 +161,14 @@
         }
     }
 
-    window.electronAPI.onProxyMessage(async (message) => {
+    window.electronAPI.onProxyMessage((message) => {
         // must be an object with a commandByte and query keys in
         if (!(typeof message === 'object' && 'commandByte' in message && 'query' in message)) {
             return;
         }
 
-        const $existingDiv = message.id ? document.getElementById(`logQueryId_${message.id}`) : null;
+        const existingDivId = message.id ? `logQueryId_${message.id}` : null;
+        const $existingDiv = existingDivId ? document.getElementById(existingDivId) : null;
 
         if ($existingDiv) {
             const logItem = logItems$.get($existingDiv);
@@ -174,7 +185,6 @@
         const date = dateFormat.format(now);
         const time = timeFormat.format(now);
 
-        const metaShort = [];
         let dateHtml = `${date} ${time}`;
         let shortMetaHtml = '';
         let queryHtml = '';
@@ -195,6 +205,10 @@
         if ((dateHtml || shortMetaHtml || queryHtml) && $log.value) {
             const logId = getNextLogId();
 
+            if (!scopedCssData) {
+                initScopedCssData();
+            }
+
             const scrolledToBottom = isScrolledToBottom($scrollContainer.value);
 
             const $tpl = [
@@ -205,7 +219,7 @@
             ].join('');
 
             const $div = document.createElement('div');
-            $div.id = message.id ? `logQueryId_${message.id}` : `logId_${logId}`;
+            $div.id = existingDivId || `logId_${logId}`;
             $div.classList.add('log-container');
             $div.innerHTML = $tpl;
             $div.dataset[scopedCssData] = '';
@@ -221,6 +235,8 @@
                 processTime: message.processTime,
                 responseTime: message.responseTime,
                 connectionId: message.connectionId,
+                isDuplicate: false,
+                queryHash: null,
             };
             logItems$.set($div, logItem);
 
@@ -247,6 +263,8 @@
                 highlightNodes($foundNodes);
             }
 
+            checkDuplicate($div);
+
             if (logStore.checkQueryIndexesUsage && isSelectQuery(message.query)) {
                 const explainHtml =  [
                     `<span class="log-meta-short-explain" data-${scopedCssData}>`,
@@ -263,17 +281,19 @@
                 appendMetaShort($div, indexUsedHtml);
 
                 const explainQuery = makeExplainQuery(message.query);
-                try {
-                    logItem.explain = await explainQuery$(explainQuery);
+                explainQuery$(explainQuery).then(res => {
+                    logItem.explain = res;
                     logItem.explain.indexUsed = isExplainUsed(logItem.explain);
-                } catch (ex) {
+                    logItem.explain.query = explainQuery;
+                    renderQueryExplain($div);
+                    renderIndexUsed($div);
+                }).catch(ex => {
                     logItem.explain = ex;
                     logItem.explain.indexUsed = false;
-                }
-                logItem.explain.query = explainQuery;
-
-                renderQueryExplain($div);
-                renderIndexUsed($div);
+                    logItem.explain.query = explainQuery;
+                    renderQueryExplain($div);
+                    renderIndexUsed($div);
+                });
             }
 
             const timeHtml = [
@@ -369,6 +389,66 @@
     }
 
     /**
+     * @param {HTMLDivElement} $div
+     * @returns {Promise<void>}
+     */
+    async function checkDuplicate($div) {
+        const logItem = logItems$.get($div);
+        if (!logItem) return;
+
+        if (logStore.highlightDuplicateQueries && !logItem.queryHash) {
+            const normalizedQuery = normalizeQuery(logItem.rawQuery);
+            logItem.queryHash = await window.electronAPI.hashQuery(normalizedQuery);
+
+            if (logStore.duplicateQueryStrings.has(logItem.queryHash)) {
+                logItem.isDuplicate = true;
+                const $first = firstOccurrences.get(logItem.queryHash);
+                if ($first) {
+                    const firstLogItem = logItems$.get($first);
+                    if (firstLogItem && !firstLogItem.isDuplicate) {
+                        firstLogItem.isDuplicate = true;
+                        renderDuplicateStatus($first);
+                    }
+                }
+            } else {
+                logStore.duplicateQueryStrings.add(logItem.queryHash);
+                firstOccurrences.set(logItem.queryHash, $div);
+            }
+        }
+
+        renderDuplicateStatus($div);
+    }
+
+    /**
+     * @param {HTMLDivElement} $div
+     */
+    function renderDuplicateStatus($div) {
+        const logItem = logItems$.get($div);
+        if (logItem && logItem.isDuplicate && logStore.highlightDuplicateQueries) {
+            $div.classList.add('duplicate-query');
+        } else {
+            $div.classList.remove('duplicate-query');
+        }
+    }
+
+    /**
+     * @param {string} hash
+     * @returns {number}
+     */
+    function getDuplicateCount(hash) {
+        if (!hash || !$log.value) return 0;
+        let count = 0;
+        const allLogContainers = $log.value.querySelectorAll('.log-container');
+        for (const $div of allLogContainers) {
+            const item = logItems$.get($div);
+            if (item && item.queryHash === hash) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
      * @param {string} sqlQuery
      * @returns {string}
      */
@@ -435,6 +515,8 @@
             $queryDetailsTimes.value = null;
             isSlowQuery.value = false;
         }
+
+        $duplicateCount.value = logStore.highlightDuplicateQueries ? getDuplicateCount(logItem?.queryHash) : null;
     }
 
     /**
@@ -656,20 +738,33 @@
 
     function clearLog() {
         if (!$log.value) return;
+
         if (confirm('Are you sure you want to clear the log?')) {
             const allLogContainers = Array.from($log.value.querySelectorAll('.log-container'));
+            const remainingHashes = new Set();
+            firstOccurrences.clear();
             for (const $div of allLogContainers) {
                 const logItem = logItems$.get($div);
-                if (!logItem || !logItem.isSaved) { // Check logItem.isSaved
+                if (logItem && logItem.isSaved) {
+                    if (logItem.queryHash) {
+                        remainingHashes.add(logItem.queryHash);
+                        if (!firstOccurrences.has(logItem.queryHash)) {
+                            firstOccurrences.set(logItem.queryHash, $div);
+                        }
+                    }
+                } else {
                     $div.parentNode.removeChild($div);
                 }
             }
+
+            // Repopulate duplicateQueryStrings only with remaining (saved) query hashes
+            logStore.duplicateQueryStrings = remainingHashes;
 
             // Always clear the session mapping so new sessions start fresh
             // even if old starred queries from those sessions remain in the DOM.
             sessionGroups.value.clear();
 
-            // Cleanup empty session groups from DOM
+            // Clean up empty session groups from DOM
             const allGroups = Array.from($log.value.querySelectorAll('.session-group'));
             for (const $group of allGroups) {
                 const $container = $group.querySelector('.session-container');
@@ -728,6 +823,23 @@
         (newValue, oldValue) => {
             if (newValue && newValue !== oldValue) {
                 // @TODO analyze existing queries
+            }
+        }
+    );
+
+    watch(
+        () => logStore.highlightDuplicateQueries,
+        async (newValue) => {
+            if (!$log.value) return;
+            const allLogContainers = Array.from($log.value.querySelectorAll('.log-container'));
+            if (newValue) {
+                for (const $div of allLogContainers) {
+                    await checkDuplicate($div);
+                }
+            } else {
+                for (const $div of allLogContainers) {
+                    renderDuplicateStatus($div);
+                }
             }
         }
     );
@@ -868,6 +980,7 @@
             const msgsAmount = allLogContainers.length;
             if (msgsAmount > maxMsgs) {
                 const amountToDelete = msgsAmount - maxMsgs;
+                let deletedAny = false;
                 for (let i = 0; i < amountToDelete; i++) {
                     const $node = allLogContainers[i];
                     if ($node && $node.parentNode) {
@@ -877,7 +990,25 @@
                             continue;
                         }
                         $node.parentNode.removeChild($node);
+                        deletedAny = true;
                     }
+                }
+
+                if (deletedAny) {
+                    // Recalculate duplicateQueryStrings from remaining nodes
+                    const remainingHashes = new Set();
+                    firstOccurrences.clear();
+                    const currentContainers = $logValue.querySelectorAll('.log-container');
+                    for (const $div of currentContainers) {
+                        const logItem = logItems$.get($div);
+                        if (logItem && logItem.queryHash) {
+                            remainingHashes.add(logItem.queryHash);
+                            if (!firstOccurrences.has(logItem.queryHash)) {
+                                firstOccurrences.set(logItem.queryHash, $div);
+                            }
+                        }
+                    }
+                    logStore.duplicateQueryStrings = remainingHashes;
                 }
 
                 // Cleanup empty session groups
@@ -938,6 +1069,10 @@
                     <div class="mb-3" v-if="$queryDetailsTimes">
                         <label class="form-label">Execution Details</label>
                         <div :class="{'text-danger fw-bold': isSlowQuery}">{{ $queryDetailsTimes }}</div>
+                    </div>
+                    <div class="mb-3" v-if="$duplicateCount > 1">
+                        <label class="form-label">Duplicate Count</label>
+                        <div>{{ $duplicateCount }}</div>
                     </div>
                     <div class="mb-3" v-if="$indexUsed">
                         <label class="form-label">Index Used</label>
@@ -1092,5 +1227,11 @@
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         z-index: 1000;
         padding: 0;
+    }
+
+    .duplicate-query {
+        background: rgba(255, 0, 0, 0.1);
+        border-left: 4px solid rgba(255, 0, 0, 0.3);
+        padding-left: 4px;
     }
 </style>
