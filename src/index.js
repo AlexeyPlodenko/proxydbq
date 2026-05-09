@@ -194,3 +194,5 @@ app.on('activate', () => {
 
 process.on('SIGINT', shutdownProxyServers);
 process.on('SIGTERM', shutdownProxyServers);
+
+require('update-electron-app')();

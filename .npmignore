@@ -1,0 +1,15 @@
+/node_modules/
+/out/
+/dist-electron/
+/.idea/
+/dist/
+/playwright-report/
+/test-results/
+/tests/
+/build/
+.compilerc
+.editorconfig
+playwright.config.js
+vite.config.js
+vite.renderer.config.mjs
+forge.config.mjs
