@@ -16,9 +16,6 @@ import xxHashAddon from 'xxhash-addon';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-import {createRequire} from 'module';
-const require = createRequire(import.meta.url);
-
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (electronSquirrelStartup) {
     app.quit();
@@ -55,7 +52,9 @@ const createWindow = async () => {
     const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
     const isTest = process.env.NODE_ENV === 'test';
 
-    const preloadPath = MAIN_WINDOW_VITE_NAME;
+    const preloadPath = isDev || isTest
+        ? join(__dirname, 'preload.js')
+        : join(app.getAppPath(), 'dist-electron', 'preload.js');
 
     mainWindow = new BrowserWindow({
         width: 800,
@@ -78,9 +77,9 @@ const createWindow = async () => {
     });
 
     // In development mode, load from Vite dev server with retry mechanism
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    if (process.env.NODE_ENV === 'development' && !isTest) {
         // Preference: Forge env var, then Plugin env var, then fallback
-        const devServerUrl = MAIN_WINDOW_VITE_DEV_SERVER_URL;
+        const devServerUrl = process.env.MAIN_WINDOW_VITE_DEV_SERVER_URL || process.env.VITE_DEV_SERVER_URL || 'http://localhost:5199/';
         
         // Try to connect to Vite dev server with retries
         let isReady = false;
@@ -104,14 +103,21 @@ const createWindow = async () => {
         } else {
             console.error('Failed to connect to Vite server after multiple attempts');
             // Fallback to loading the file directly
-            mainWindow.loadFile(join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+            const indexHtml = join(dirname(__dirname), 'index.html');
+            await mainWindow.loadURL(pathToFileURL(indexHtml).toString());
         }
 
         // Open the DevTools
         mainWindow.webContents.openDevTools();
 
+    } else if (isTest) {
+        // In test mode, we usually want to load the file directly or a specific test URL
+        const indexHtml = join(dirname(__dirname), 'index.html');
+        await mainWindow.loadURL(pathToFileURL(indexHtml).toString());
     } else {
-        mainWindow.loadFile(join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+        const indexHtml = join(app.getAppPath(), 'dist', 'electron', 'index.html');
+        const indexUrl = pathToFileURL(indexHtml).toString();
+        await mainWindow.loadURL(indexUrl);
     }
 
     // Emitted when the window is closed.
@@ -188,5 +194,3 @@ app.on('activate', () => {
 
 process.on('SIGINT', shutdownProxyServers);
 process.on('SIGTERM', shutdownProxyServers);
-
-require('update-electron-app')();
