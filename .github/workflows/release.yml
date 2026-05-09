@@ -20,8 +20,10 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, windows-latest, macos-latest]
-                arch: [x64, arm64]
+#                os: [ubuntu-latest, windows-latest, macos-latest]
+#                arch: [x64, arm64]
+                os: [windows-latest]
+                arch: [x64]
                 exclude:
                     - os: windows-latest
                       arch: arm64
@@ -53,9 +55,3 @@ jobs:
                   name: webpack-source-maps
                   path: .webpack
                   include-hidden-files: true
-
-    # The 'build' job already publishes the artifacts to GitHub using electron-forge.
-    # We can keep the 'release' job if we want to do something else after all builds are finished,
-    # but for basic Forge publishing, the 'build' job is sufficient.
-    # I'll remove the redundant release job which was Fiddle-specific.
-
