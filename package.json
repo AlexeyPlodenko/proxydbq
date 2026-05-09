@@ -4,7 +4,7 @@
     "author": "Alexey Plodenko",
     "version": "0.1.0",
     "description": "This tool provides a real-time list of all SQL queries, monitoring and automatically analyzing them to determine whether they use a database index.",
-    "main": ".vite/build/main",
+    "main": ".vite/build/main.js",
     "type": "module",
     "scripts": {
         "dev": "cross-env NODE_ENV=development vite",

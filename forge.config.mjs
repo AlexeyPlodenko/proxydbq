@@ -2,14 +2,6 @@ const config = {
   packagerConfig: {
     asar: true,
     icon: 'build/icon',
-    ignore: [
-      /^\/\.gitignore$/,
-      /^\/\.git$/,
-      /^\/src$/,
-      /^\/tests$/,
-      /^\/vite\.config\.js$/,
-      /^\/vite\.renderer\.config\.mjs$/,
-    ],
   },
   rebuildConfig: {},
   makers: [
