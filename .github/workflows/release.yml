@@ -2,10 +2,15 @@
 
 name: Release
 
+#on:
+#    push:
+#        tags:
+#            - 'v*'
+
 on:
-    push:
-        tags:
-            - 'v*'
+    workflow_dispatch: # This enables the manual trigger
+    push: # This is an automatic deployment on every push to the branch
+        branches: [ "main" ]
 
 permissions: {}
 
