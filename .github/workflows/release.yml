@@ -12,7 +12,8 @@ on:
     push: # This is an automatic deployment on every push to the branch
         branches: [ "main" ]
 
-permissions: {}
+permissions:
+    contents: write
 
 jobs:
     build:
@@ -44,12 +45,12 @@ jobs:
                 #                  APPLE_ID: ${{ secrets.APPLE_ID }}
                 #                  APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
               run: npm run publish -- --arch=${{ matrix.arch }}
-            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-              with:
-                  name: build-artifacts-${{ matrix.os }}-${{ matrix.arch }}
-                  path: out
-            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-              with:
-                  name: webpack-source-maps-${{ matrix.os }}-${{ matrix.arch }}
-                  path: .webpack
-                  include-hidden-files: true
+#            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+#              with:
+#                  name: build-artifacts-${{ matrix.os }}-${{ matrix.arch }}
+#                  path: out
+#            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+#              with:
+#                  name: webpack-source-maps-${{ matrix.os }}-${{ matrix.arch }}
+#                  path: .webpack
+#                  include-hidden-files: true

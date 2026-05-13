@@ -67,7 +67,7 @@ export default {
                     name: 'proxydbq',
                 },
                 prerelease: false,
-                draft: true,
+                draft: false,
             },
         },
     ],
