@@ -1,8 +1,8 @@
-import {app, BrowserWindow, net, ipcMain} from 'electron';
+import {app, BrowserWindow, ipcMain} from 'electron';
 import electronSquirrelStartup from 'electron-squirrel-startup';
 import { shell } from 'electron';
-import {fileURLToPath, pathToFileURL} from 'url';
-import {dirname, join} from 'path';
+import {fileURLToPath} from 'url';
+import {dirname} from 'path';
 import {
     createMySQLProxyServer,
     setLogCallback,
@@ -11,10 +11,12 @@ import {
 } from "./lib/mysql/mysqlProxyServer.js";
 import {d} from "./lib/helpers.js";
 import xxHashAddon from 'xxhash-addon';
+import path from 'path';
+import 'source-map-support/register';
 
 // Get the directory path in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (electronSquirrelStartup) {
@@ -25,37 +27,16 @@ if (electronSquirrelStartup) {
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
-// Function to check if the Vite dev server is ready
-const isViteServerReady = (url) => {
-    return new Promise((resolve) => {
-        const request = net.request(url);
-        // Set a short timeout for the check
-        const timeout = setTimeout(() => {
-            request.abort();
-            resolve(false);
-        }, 500);
-
-        request.on('response', () => {
-            clearTimeout(timeout);
-            resolve(true);
-        });
-        request.on('error', () => {
-            clearTimeout(timeout);
-            resolve(false);
-        });
-        request.end();
-    });
-};
-
 const createWindow = async () => {
+    const isPackaged = app.isPackaged;
+    const preloadPath = isPackaged
+        ? path.join(__dirname, '..', 'renderer', 'main_window', 'preload.js')
+        : MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
+
+    console.log('Preload path:', preloadPath);
+    console.log('isPackaged:', isPackaged);
+
     // Create the browser window.
-    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-    const isTest = process.env.NODE_ENV === 'test';
-
-    const preloadPath = isDev || isTest
-        ? join(__dirname, 'preload.js')
-        : join(app.getAppPath(), 'dist-electron', 'preload.js');
-
     mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
@@ -76,48 +57,11 @@ const createWindow = async () => {
         return { action: 'allow' }; // Allow other types of new windows (if applicable)
     });
 
-    // In development mode, load from Vite dev server with retry mechanism
-    if (process.env.NODE_ENV === 'development' && !isTest) {
-        // Preference: Forge env var, then Plugin env var, then fallback
-        const devServerUrl = process.env.MAIN_WINDOW_VITE_DEV_SERVER_URL || process.env.VITE_DEV_SERVER_URL || 'http://localhost:5199/';
-        
-        // Try to connect to Vite dev server with retries
-        let isReady = false;
-        let retries = 0;
-        const maxRetries = 10;
+    await mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
-        while (!isReady && retries < maxRetries) {
-            console.log(`Checking if Vite server is ready at ${devServerUrl} (attempt ${retries + 1}/${maxRetries})...`);
-            isReady = await isViteServerReady(devServerUrl);
-
-            if (!isReady) {
-                retries++;
-                // Wait for 1 second before trying again
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-
-        if (isReady) {
-            console.log(`Vite server at ${devServerUrl} is ready, loading URL...`);
-            await mainWindow.loadURL(devServerUrl);
-        } else {
-            console.error('Failed to connect to Vite server after multiple attempts');
-            // Fallback to loading the file directly
-            const indexHtml = join(dirname(__dirname), 'index.html');
-            await mainWindow.loadURL(pathToFileURL(indexHtml).toString());
-        }
-
-        // Open the DevTools
+    // Open the DevTools
+    if (!app.isPackaged) {
         mainWindow.webContents.openDevTools();
-
-    } else if (isTest) {
-        // In test mode, we usually want to load the file directly or a specific test URL
-        const indexHtml = join(dirname(__dirname), 'index.html');
-        await mainWindow.loadURL(pathToFileURL(indexHtml).toString());
-    } else {
-        const indexHtml = join(app.getAppPath(), 'dist', 'electron', 'index.html');
-        const indexUrl = pathToFileURL(indexHtml).toString();
-        await mainWindow.loadURL(indexUrl);
     }
 
     // Emitted when the window is closed.

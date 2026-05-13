@@ -75,22 +75,26 @@ This is caused by a version mismatch in esbuild between the JavaScript host pack
 
 Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see the error, run `npm cache verify` and repeat the steps above.
 
+## npm run make
+
+On Windows use `$env:DEBUG="electron-forge:*"; npm run clean; npm run make` to make the app with the debug logging enabled.
+
 ## TODO
 
 - [ ] Test if Vitess, TiDB, MariaDB protocols are also supported. Update docs. Reflect supported protocols in UI.
-- [x] Remember query. A clickable star icon, that puts the query to the saved queries list.
+- [x] Remember the query. A clickable star icon that puts the query to the saved queries list.
 - [x] View query. Click on a query to see the query details.
 - [x] Saved queries should not be removed.
-- [ ] Access saved queries in query viewer.
-- [ ] Debug mode. Make possible to see the internal operations and errors in the main log.
+- [ ] Access saved queries in the query viewer.
+- [ ] Debug mode. Make it possible to see the internal operations and errors in the main log.
 - [ ] Output time with seconds.
 - [ ] Time format customizable.
 - [ ] Add output styles: date on the left; date above the query;..
 - [ ] Focus on search.
 - [ ] Queries filter - time range; query type: SELECT, INSERT,..
-- [ ] Window focus on search match. Highlight, expand and focus on app window when the search has a match.
-- [ ] Show amount of search matches in search panel.
-- [ ] Allow to navigate between search matches.
+- [ ] Window focuses on a search match. Highlight, expand and focus on the app window when the search has a match.
+- [ ] Show the number of search matches in the search panel.
+- [ ] Allow navigating between search matches.
 - [x] "Scroll to bottom" button.
 - [ ] Refactor code.
 - [ ] Group requests by clientId/session - `[MySQL][127.0.0.1:61513]`?
@@ -106,3 +110,4 @@ Note: The project pins esbuild to 0.21.5 to align with Vite. If you still see th
 - [ ] Notify about N+1 queries.
 - [ ] Highlight query on mouse hover
 - [ ] Make maxMsgs in Log.vue configurable
+- [ ] You are using bootstrap-icons. If you import the CSS file (@import 'bootstrap-icons/font/bootstrap-icons.css'), Webpack will bundle the entire icon font file (woff/woff2), even if you only use 5 icons. Suggestion: Use the SVG versions of the icons or a library like unplugin-icons to only bundle the specific icons used in your Vue templates.

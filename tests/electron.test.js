@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 
 test('launch app', async () => {
   const electronApp = await electron.launch({
-    args: [join(__dirname, '../src/index.js')],
+    args: [join(__dirname, '../src/main.js')],
     env: {
         ...process.env,
         NODE_ENV: 'test'
