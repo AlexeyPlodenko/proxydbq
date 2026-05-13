@@ -1,5 +1,5 @@
 import {VueLoaderPlugin} from 'vue-loader';
-import rules from './webpack.renderer.rules.js';
+import rules from './webpack.renderer.rules.mjs';
 import webpack from 'webpack';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -10,8 +10,8 @@ rules.push({
 });
 
 export default {
-    mode: 'development',
-    devtool: 'eval-source-map',
+    // mode: 'development',
+    // devtool: 'eval-source-map',
     // devtool: isDev ? 'eval-source-map' : 'source-map',
     module: {
         rules,

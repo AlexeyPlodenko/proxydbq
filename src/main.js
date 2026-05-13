@@ -29,9 +29,10 @@ let mainWindow;
 
 const createWindow = async () => {
     const isPackaged = app.isPackaged;
-    const preloadPath = isPackaged
-        ? path.join(__dirname, '..', 'renderer', 'main_window', 'preload.js')
-        : MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
+    const preloadPath = MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
+    // const preloadPath = isPackaged
+    //     ? path.join(__dirname, '..', 'renderer', 'main_window', 'preload.js')
+    //     : MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
 
     console.log('Preload path:', preloadPath);
     console.log('isPackaged:', isPackaged);

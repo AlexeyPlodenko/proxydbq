@@ -21,10 +21,10 @@ test('launch app', async () => {
   await window.waitForLoadState('domcontentloaded');
   
   // Update expectation to match the actual title including version
-  expect(await window.title()).toBe('Proxy DBQ v0.0.1');
+    await expect(window).toHaveTitle('ProxyDBQ');
 
   // Check if main content is visible
-  // Wait for the #app element which is where Vue mounts
+  // Wait for the #app element, which is where Vue mounts
   await window.waitForSelector('#app', { timeout: 10000 });
 
   const content = await window.textContent('body');

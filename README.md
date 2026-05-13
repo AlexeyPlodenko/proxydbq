@@ -1,4 +1,4 @@
-# Proxy DBQ
+# ProxyDBQ
 
 This developer's tool is a proxy between your website and database, giving you full visibility into all executed queries. It automatically identifies performance bottlenecks and highlights slow queries that need indexing. Currently, supports `MySQL`, with `PostgreSQL` and `MongoDB` support coming soon.
 
@@ -17,16 +17,16 @@ Assuming your MySQL database server is running locally. Otherwise, use your serv
 
 ### Local host
 
-1. Specify the port at which the Proxy DBQ runs (default 3307) in your application configuration file. For example, in Laravel PHP `.env` file add `DB_PORT=3307`.
-2. Use `127.0.0.1` as `Target DB server IP`, `3306` as `Target DB server port` and `3307` as `Local proxy port` in Proxy DBQ interface.
-3. Hit `Start Proxy Server` button in Proxy DBQ interface.
+1. Specify the port at which the ProxyDBQ runs (default 3307) in your application configuration file. For example, in Laravel PHP `.env` file add `DB_PORT=3307`.
+2. Use `127.0.0.1` as `Target DB server IP`, `3306` as `Target DB server port` and `3307` as `Local proxy port` in ProxyDBQ interface.
+3. Hit `Start Proxy Server` button in ProxyDBQ interface.
 
 ### Docker
 
-1. Specify the port at which the Proxy DBQ runs (default 3307) in your application configuration file. For example, in Laravel PHP `.env` file add `DB_PORT=3307`.
+1. Specify the port at which the ProxyDBQ runs (default 3307) in your application configuration file. For example, in Laravel PHP `.env` file add `DB_PORT=3307`.
 2. Specify the database server host IP as `host.docker.internal` in your application configuration file. For example, in Laravel PHP `.env` file add `DB_HOST=host.docker.internal`.
-3. Use `127.0.0.1` as `Target DB server IP`, `3306` as `Target DB server port` and `3307` as `Local proxy port` in Proxy DBQ interface.
-4. Hit `Start Proxy Server` button in Proxy DBQ interface.
+3. Use `127.0.0.1` as `Target DB server IP`, `3306` as `Target DB server port` and `3307` as `Local proxy port` in ProxyDBQ interface.
+4. Hit `Start Proxy Server` button in ProxyDBQ interface.
 
 ## Development
 

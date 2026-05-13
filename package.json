@@ -1,6 +1,6 @@
 {
     "name": "proxydbq",
-    "productName": "Proxy DBQ",
+    "productName": "ProxyDBQ",
     "version": "0.1.0",
     "description": "This tool provides a real-time list of all SQL queries, monitoring and automatically analyzing them to determine whether they use a database index.",
     "main": ".webpack/main",

@@ -63,7 +63,7 @@
         <template v-slot:content>
             <a href="https://github.com/alexeyplodenko/proxydbq" target="_blank" class="d-flex align-items-center pb-3 mb-3 link-body-emphasis text-decoration-none border-bottom">
                 <svg class="bi pe-none me-2" width="30" height="24" aria-hidden="true"><!-- @TODO icon --></svg>
-                <span class="fs-5 fw-semibold">Proxy DBQ</span>
+                <span class="fs-5 fw-semibold">ProxyDBQ</span>
                 <sup class="ms-1">(v0.0.1)</sup>
             </a>
             <ul class="list-unstyled ps-0 mb-auto">
