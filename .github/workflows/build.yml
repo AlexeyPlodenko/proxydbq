@@ -12,17 +12,12 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os:
-                    #                    - macos-15-intel
-                    #                    - ubuntu-latest
-                    - windows-latest
-                arch:
-                    - x64
-        #                include:
-        #                    - os: macos-latest
-        #                      arch: arm64
-        #                    - os: ubuntu-24.04-arm
-        #                      arch: armv7l
+             #   os: [ubuntu-latest, windows-latest, macos-latest]
+                os: [windows-latest]
+                arch: [x64]
+                include:
+                    - os: macos-latest
+                      arch: arm64
         runs-on: '${{ matrix.os }}'
         steps:
             - run: git config --global core.autocrlf input
@@ -36,4 +31,13 @@ jobs:
             - name: Install dependencies
               run: npm install
             - name: Run Forge makers
-              run: npm run make
+              run: npm run make -- --arch=${{ matrix.arch }}
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: build-artifacts-${{ matrix.os }}-${{ matrix.arch }}
+                  path: out
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: webpack-source-maps-${{ matrix.os }}-${{ matrix.arch }}
+                  path: .webpack
+                  include-hidden-files: true
