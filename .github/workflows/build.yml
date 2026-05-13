@@ -1,0 +1,39 @@
+# https://github.com/electron/fiddle/blob/main/.github/workflows/build.yml
+
+name: Build
+
+# Called from ci
+on:
+    workflow_call:
+
+jobs:
+    build:
+        name: Build
+        strategy:
+            fail-fast: false
+            matrix:
+                os:
+                    #                    - macos-15-intel
+                    #                    - ubuntu-latest
+                    - windows-latest
+                arch:
+                    - x64
+        #                include:
+        #                    - os: macos-latest
+        #                      arch: arm64
+        #                    - os: ubuntu-24.04-arm
+        #                      arch: armv7l
+        runs-on: '${{ matrix.os }}'
+        steps:
+            - run: git config --global core.autocrlf input
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: 'npm'
+            - name: Install dependencies
+              run: npm install
+            - name: Run Forge makers
+              run: npm run make
