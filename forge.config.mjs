@@ -58,4 +58,17 @@ export default {
             [FuseV1Options.OnlyLoadAppFromAsar]: false,
         }),
     ],
+    publishers: [
+        {
+            name: '@electron-forge/publisher-github',
+            config: {
+                repository: {
+                    owner: 'alexeyplodenko',
+                    name: 'proxydbq',
+                },
+                prerelease: false,
+                draft: true,
+            },
+        },
+    ],
 };
