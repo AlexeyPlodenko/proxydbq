@@ -1,5 +1,6 @@
 import {VueLoaderPlugin} from 'vue-loader';
 import rules from './webpack.renderer.rules.js';
+import webpack from 'webpack';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -17,5 +18,10 @@ export default {
     },
     plugins: [
         new VueLoaderPlugin(),
+        new webpack.DefinePlugin({
+            __VUE_OPTIONS_API__: JSON.stringify(true),
+            __VUE_PROD_DEVTOOLS__: JSON.stringify(isDev),
+            __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+        }),
     ]
 };
